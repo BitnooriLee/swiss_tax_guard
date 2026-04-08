@@ -2,11 +2,11 @@
 
 > **Turning tax debt into spending confidence** — real-time tax liability and Safe-to-Spend guidance for Swiss residents.
 
-This repository extends the [Supaplate](https://supaplate.com/docs) stack (React Router 7, Supabase, Drizzle). Product scope and roadmap live in [`PROJECT_PLAN.md`](./PROJECT_PLAN.md); Swiss rules and engineering constraints live in [`AI.md`](./AI.md).
+This repository extends the [Supaplate](https://supaplate.com/docs) stack (React Router 7, Supabase, Drizzle). Product scope and roadmap live in [`PROJECT_PLAN.md`](./PROJECT_PLAN.md); Swiss rules and engineering constraints.
 
 ## What it does
 
-- **Safe-to-Spend** isolates estimated tax from liquid assets so day-to-day spending reflects what is actually disposable (see formula in `AI.md`).
+- **Safe-to-Spend** isolates estimated tax from liquid assets so day-to-day spending reflects what is actually disposable (formula : Safe-to-Spend = Total Assets - (Estimated Tax Liability + Safety Buffer)).
 - **Precision**: monetary amounts are modeled in **Rappen** (`bigint`); UI formats CHF for display.
 - **Dashboard** (`/tax`): Nordic-style layout with Safe-to-Spend hero/dial, tax breakdown, and asset mix (cash, crypto, stock) from the ledger.
 
@@ -67,7 +67,6 @@ Aligned with **Phase 1 — High-precision foundation** and parts of **Phase 2 �
 ## Documentation
 
 - **Product & roadmap**: [`PROJECT_PLAN.md`](./PROJECT_PLAN.md)
-- **Swiss domain + engineering rules**: [`AI.md`](./AI.md)
 - **Base template docs**: [supaplate.com/docs](https://supaplate.com/docs)
 
 ## License
