@@ -1,0 +1,114 @@
+{
+  "meta": {
+    "source": "estv-shaped-dummy",
+    "schemaVersion": 1,
+    "note": "Illustrative brackets only — replace with official ESTV / cantonal data."
+  },
+  "seeds": [
+    {
+      "taxYear": 2025,
+      "canton": "ZH",
+      "municipalityId": null,
+      "payload": {
+        "jurisdiction": { "canton": "ZH", "taxYear": 2025 },
+        "layers": {
+          "income": {
+            "type": "marginal_dummy",
+            "currency": "CHF"
+          }
+        }
+      },
+      "brackets": [
+        {
+          "lowerBoundRappen": "0",
+          "upperBoundRappen": "20000000",
+          "marginalRateBps": 80
+        },
+        {
+          "lowerBoundRappen": "20000000",
+          "upperBoundRappen": "50000000",
+          "marginalRateBps": 150
+        },
+        {
+          "lowerBoundRappen": "50000000",
+          "upperBoundRappen": null,
+          "marginalRateBps": 220
+        }
+      ]
+    },
+    {
+      "taxYear": 2026,
+      "canton": "ZH",
+      "municipalityId": null,
+      "payload": {
+        "jurisdiction": { "canton": "ZH", "taxYear": 2026 },
+        "layers": {
+          "income": { "type": "marginal_dummy", "currency": "CHF" }
+        }
+      },
+      "brackets": [
+        {
+          "lowerBoundRappen": "0",
+          "upperBoundRappen": "20000000",
+          "marginalRateBps": 82
+        },
+        {
+          "lowerBoundRappen": "20000000",
+          "upperBoundRappen": "50000000",
+          "marginalRateBps": 152
+        },
+        {
+          "lowerBoundRappen": "50000000",
+          "upperBoundRappen": null,
+          "marginalRateBps": 225
+        }
+      ]
+    },
+    {
+      "taxYear": 2025,
+      "canton": "ZG",
+      "municipalityId": null,
+      "payload": {
+        "jurisdiction": { "canton": "ZG", "taxYear": 2025 },
+        "layers": {
+          "income": { "type": "marginal_dummy", "currency": "CHF" }
+        }
+      },
+      "brackets": [
+        {
+          "lowerBoundRappen": "0",
+          "upperBoundRappen": "25000000",
+          "marginalRateBps": 60
+        },
+        {
+          "lowerBoundRappen": "25000000",
+          "upperBoundRappen": null,
+          "marginalRateBps": 120
+        }
+      ]
+    },
+    {
+      "taxYear": 2026,
+      "canton": "ZG",
+      "municipalityId": null,
+      "payload": {
+        "jurisdiction": { "canton": "ZG", "taxYear": 2026 },
+        "layers": {
+          "income": { "type": "marginal_dummy", "currency": "CHF" }
+        }
+      },
+      "brackets": [
+        {
+          "lowerBoundRappen": "0",
+          "upperBoundRappen": "25000000",
+          "marginalRateBps": 62
+        },
+        {
+          "lowerBoundRappen": "25000000",
+          "upperBoundRappen": null,
+          "marginalRateBps": 125
+        }
+      ]
+    }
+  ]
+}

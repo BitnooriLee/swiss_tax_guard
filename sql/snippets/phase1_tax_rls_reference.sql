@@ -1,0 +1,12 @@
+-- Phase 1 RLS reference (mirrors Drizzle pgPolicy definitions).
+-- Apply via migrations generated from Drizzle, or audit policies against this list.
+--
+-- swiss_tax_contexts: owner is profile_id (= auth.users.id)
+--   SELECT / INSERT / UPDATE / DELETE: auth.uid() = profile_id
+--
+-- asset_ledger: owner is user_id
+--   SELECT / INSERT / UPDATE / DELETE: auth.uid() = user_id
+--
+-- tax_rate_seeds, tax_rate_brackets: reference data
+--   SELECT: authenticated, USING (true)
+--   INSERT/UPDATE/DELETE: service_role / migration only (no end-user write policies)

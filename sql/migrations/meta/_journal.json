@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1744715748834,
+      "tag": "0000_worried_vision",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1744715791562,
+      "tag": "0001_great_junta",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775588889666,
+      "tag": "0002_loose_leper_queen",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1775600000000,
+      "tag": "0003_immutable_asset_ledger",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1775700000000,
+      "tag": "0004_allow_asset_ledger_delete_cascade",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1775800000000,
+      "tag": "0005_asset_ledger_multi_currency",
+      "breakpoints": true
+    }
+  ]
+}
