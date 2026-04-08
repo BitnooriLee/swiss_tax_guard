@@ -4,7 +4,6 @@ export async function loader() {
 Disallow: /dashboard
 Disallow: /account
 Disallow: /settings
-Disallow: /payments
 Disallow: /api
 Allow: /
 

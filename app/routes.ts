@@ -25,6 +25,7 @@ export default [
   ]),
   // API Routes. Routes that export actions and loaders but no UI.
   ...prefix("/api", [
+    route("/export-pdf", "routes/api.export-pdf.ts"),
     route("/fx-rate", "routes/api.fx-rate.ts"),
     ...prefix("/settings", [
       route("/theme", "features/settings/api/set-theme.tsx"),
@@ -42,7 +43,6 @@ export default [
       ),
     ]),
     ...prefix("/cron", [route("/mailer", "features/cron/api/mailer.tsx")]),
-    ...prefix("/blog", [route("/og", "features/blog/api/og.tsx")]),
   ]),
 
   layout("core/layouts/navigation.layout.tsx", [
@@ -84,32 +84,21 @@ export default [
       // Routes that should only be visible to authenticated users.
       route("/logout", "features/auth/screens/logout.tsx"),
     ]),
-    route("/contact", "features/contact/screens/contact-us.tsx"),
-    ...prefix("/payments", [
-      route("/checkout", "features/payments/screens/checkout.tsx"),
-      layout("core/layouts/private.layout.tsx", { id: "private-payments" }, [
-        route("/success", "features/payments/screens/success.tsx"),
-        route("/failure", "features/payments/screens/failure.tsx"),
-      ]),
-    ]),
   ]),
 
   layout("core/layouts/private.layout.tsx", { id: "private-dashboard" }, [
     layout("features/users/layouts/dashboard.layout.tsx", [
       ...prefix("/dashboard", [
         index("features/users/screens/dashboard.tsx"),
+        route(
+          "/account",
+          "features/users/screens/dashboard-account-redirect.tsx",
+        ),
         route("/tax", "features/tax/screens/tax-dashboard.tsx"),
-        route("/payments", "features/payments/screens/payments.tsx"),
       ]),
       route("/account/edit", "features/users/screens/account.tsx"),
     ]),
   ]),
 
   ...prefix("/legal", [route("/:slug", "features/legal/screens/policy.tsx")]),
-  layout("features/blog/layouts/blog.layout.tsx", [
-    ...prefix("/blog", [
-      index("features/blog/screens/posts.tsx"),
-      route("/:slug", "features/blog/screens/post.tsx"),
-    ]),
-  ]),
 ] satisfies RouteConfig;

@@ -14,7 +14,10 @@ export async function getUserProfile(
     .eq("profile_id", userId)
     .maybeSingle();
   if (error) {
-    throw error;
+    if (import.meta.env.DEV) {
+      console.error("[getUserProfile]", error.message);
+    }
+    return null;
   }
   return data;
 }

@@ -139,7 +139,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
  * This component handles the HTML structure of the application and applies:
  * - Language direction (RTL/LTR) based on the current locale
  * - Theme class to the HTML element
- * - Special handling for pre-rendered routes (blog, legal pages)
+ * - Special handling for pre-rendered legal pages
  * - Loading of analytics and customer support scripts
  *
  * @param children - Child components to render within the layout
@@ -155,14 +155,14 @@ function InnerLayout({ children }: { children: React.ReactNode }) {
 
   // Detect if the current route is a pre-rendered page (blog or legal)
   // These pages require special theme handling
-  const isPreRendered =
-    pathname.includes("/legal") || pathname.includes("/blog");
+  const isPreRendered = pathname.includes("/legal");
 
   return (
     <html
       lang={data?.locale ?? "en"}
       className={cn(theme ?? "", "h-full")}
       dir={i18n.dir()}
+      suppressHydrationWarning
     >
       <head>
         <meta charSet="utf-8" />
@@ -175,7 +175,8 @@ function InnerLayout({ children }: { children: React.ReactNode }) {
           <PreventFlashOnWrongTheme ssrTheme={Boolean(data?.theme)} />
         )}
       </head>
-      <body className="h-full">
+      {/* suppressHydrationWarning: browser extensions (e.g. Grammarly) mutate <body> attributes before hydrate. */}
+      <body className="h-full" suppressHydrationWarning>
         {children}
         <Toaster richColors position="bottom-right" />
         <ScrollRestoration />
@@ -257,7 +258,7 @@ export default function App() {
         navigate(`/error?${searchParams.toString()}`);
       } else if (code) {
         // Redirect to dashboard if authentication succeeded
-        navigate(`/dashboard/account`);
+        navigate(`/dashboard/tax`);
       }
     }
   }, [searchParams]);

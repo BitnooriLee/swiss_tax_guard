@@ -2,7 +2,7 @@
  * Connect Provider API Endpoint
  *
  * This file implements an API endpoint for connecting a user's account to a third-party
- * authentication provider (like GitHub or Kakao). It handles provider validation,
+ * authentication provider (like GitHub). It handles provider validation,
  * authentication checks, and integration with Supabase Auth API for identity linking.
  *
  * Key features:
@@ -26,13 +26,13 @@ import makeServerClient from "~/core/lib/supa-client.server";
  * Validation schema for provider connection form data
  *
  * This schema defines the required fields and validation rules:
- * - provider: Must be one of the supported providers (github, kakao)
+ * - provider: Must be one of the supported providers (github)
  *
  * The schema ensures that only supported providers can be used for account linking,
  * preventing potential security issues with unsupported providers.
  */
 const schema = z.object({
-  provider: z.enum(["github", "kakao"]),
+  provider: z.enum(["github"]),
 });
 
 /**
@@ -41,7 +41,7 @@ const schema = z.object({
  * This function handles the complete provider connection flow:
  * 1. Validates that the request method is POST
  * 2. Authenticates the user making the request
- * 3. Validates the provider type (github, kakao)
+ * 3. Validates the provider type (github)
  * 4. Initiates the identity linking process with Supabase Auth API
  * 5. Redirects to the provider's OAuth flow or returns error responses
  *

@@ -5,7 +5,8 @@ export type Translation = {
   };
   navigation: {
     en: string;
+    de: string;
+    fr: string;
     kr: string;
-    es: string;
   };
 };

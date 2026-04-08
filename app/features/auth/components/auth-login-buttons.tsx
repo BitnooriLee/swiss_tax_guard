@@ -3,7 +3,7 @@
  *
  * This module provides reusable components for rendering various authentication options
  * in a consistent and styled manner. It supports multiple authentication methods including:
- * - Social logins (Google, GitHub, Apple, Kakao)
+ * - Social logins (Google, GitHub, Apple)
  * - Passwordless options (OTP, Magic Link)
  *
  * The components are designed to be used in both sign-in and sign-up flows, with
@@ -21,8 +21,6 @@ import { Button } from "~/core/components/ui/button";
 import { AppleLogo } from "./logos/apple";
 import { GithubLogo } from "./logos/github";
 import { GoogleLogo } from "./logos/google";
-import { KakaoLogo } from "./logos/kakao";
-
 /**
  * Generic authentication button component
  * 
@@ -112,7 +110,6 @@ function _SignInButtons() {
  * - Google
  * - GitHub
  * - Apple
- * - Kakao
  * 
  * Each button uses the provider's official logo and links to the appropriate
  * OAuth flow. The styling is consistent while respecting each provider's
@@ -135,11 +132,6 @@ function SocialLoginButtons() {
         logo={<AppleLogo className="size-4 scale-150 dark:text-white" />}
         label="Apple"
         href="/auth/social/start/apple"
-      />
-      <AuthLoginButton
-        logo={<KakaoLogo className="size-4 scale-125 dark:text-yellow-300" />}
-        label="Kakao"
-        href="/auth/social/start/kakao"
       />
     </>
   );

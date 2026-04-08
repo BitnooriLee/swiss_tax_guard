@@ -166,7 +166,8 @@ test.describe("Change Password", () => {
       await loginUser(page, TEST_EMAIL, "newpassword123");
       // Navigate to the dashboard and verify successful login
       await page.goto("/dashboard");
-      await expect(page).toHaveTitle(/Dashboard/);
+      await expect(page).toHaveURL(/\/dashboard\/tax$/);
+      await expect(page).toHaveTitle(/Tax dashboard/);
     });
   });
 });

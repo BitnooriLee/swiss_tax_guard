@@ -23,6 +23,8 @@ export default defineConfig((config) => {
   }
   return {
     server: {
+      /** Bind all interfaces so both `localhost` and `127.0.0.1` reach the dev server. */
+      host: true,
       allowedHosts: true,
       watch: {
         ignored: [

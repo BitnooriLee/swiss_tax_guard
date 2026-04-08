@@ -111,6 +111,7 @@ export type Database = {
           marital_status: string;
           church_tax: boolean;
           children_count: number;
+          pillar_3a_contribution_rappen: string;
           moved_at: string | null;
           created_at: string;
           updated_at: string;
@@ -122,6 +123,7 @@ export type Database = {
           marital_status: string;
           church_tax?: boolean;
           children_count?: number;
+          pillar_3a_contribution_rappen?: string;
           moved_at?: string | null;
         };
         Update: Partial<{
@@ -130,6 +132,7 @@ export type Database = {
           marital_status: string;
           church_tax: boolean;
           children_count: number;
+          pillar_3a_contribution_rappen: string;
           moved_at: string | null;
         }>;
         Relationships: [];

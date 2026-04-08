@@ -17,6 +17,8 @@ export type {
 /** 1 CHF = 100 Rappen (integer ledger unit). */
 export const RAPPEN_PER_CHF = 100n;
 
+export { calculate3aTaxSaving, clampPillar3aContributionRappen } from "./lib/pillar-3a-math";
+
 export function chfWholeToRappen(chfWhole: bigint): bigint {
   return chfWhole * RAPPEN_PER_CHF;
 }

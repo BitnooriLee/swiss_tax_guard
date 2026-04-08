@@ -13,6 +13,8 @@ import { createClient } from "@supabase/supabase-js";
 
 import {
   deleteAssetLedgerRowsForEmail,
+  ensureProfileRowForEmail,
+  ensureProfileRowForUserId,
   getLatestAssetLedgerRowForEmail,
 } from "e2e/utils/tax-guard-cleanup";
 import { deleteUser } from "e2e/utils/test-helpers";
@@ -31,9 +33,13 @@ const TEST_PASSWORD = process.env.TAX_GUARD_TEST_USER_PASSWORD ?? "password";
 const PROVIDED_TEST_EMAIL = process.env.TAX_GUARD_TEST_USER_EMAIL?.trim() ?? "";
 
 let testEmail = "";
+let testUserId: string | undefined;
 let shouldCleanupUser = false;
 
-async function provisionConfirmedUser(email: string, password: string) {
+async function provisionConfirmedUser(
+  email: string,
+  password: string,
+): Promise<string | undefined> {
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !serviceRoleKey) {
@@ -45,7 +51,7 @@ async function provisionConfirmedUser(email: string, password: string) {
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { error } = await adminClient.auth.admin.createUser({
+  const { data, error } = await adminClient.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
@@ -54,6 +60,7 @@ async function provisionConfirmedUser(email: string, password: string) {
   if (error && !/already/i.test(error.message)) {
     throw new Error(`Failed to provision E2E user: ${error.message}`);
   }
+  return data?.user?.id;
 }
 
 async function assertSupabaseReachable() {
@@ -208,13 +215,22 @@ test.describe.serial("Tax Guard dashboard E2E", () => {
     if (PROVIDED_TEST_EMAIL.length > 0) {
       testEmail = PROVIDED_TEST_EMAIL;
       shouldCleanupUser = false;
+      testUserId = undefined;
     } else {
       testEmail = `tax-guard-${browserName}-${Date.now()}@example.com`;
       shouldCleanupUser = true;
-      await provisionConfirmedUser(testEmail, TEST_PASSWORD);
+      testUserId = await provisionConfirmedUser(testEmail, TEST_PASSWORD);
     }
 
     await deleteAssetLedgerRowsForEmail(testEmail);
+
+    // Admin-provisioned users bypass the sign-up trigger → profile row may not exist.
+    // Upsert it so canton update action can succeed (RLS UPDATE requires existing row).
+    if (testUserId) {
+      await ensureProfileRowForUserId(testUserId);
+    } else {
+      await ensureProfileRowForEmail(testEmail);
+    }
   });
 
   test.afterAll(async () => {
@@ -238,6 +254,26 @@ test.describe.serial("Tax Guard dashboard E2E", () => {
 
     const zero = await captureTaxDashboardState(page);
     expect(zero.lastHistoryRappen).toBe(zero.totalAssetsRappen);
+  });
+
+  test("tax statement PDF export returns attachment with PDF magic bytes", async ({ page }) => {
+    await loginAndOpenTaxDashboard(page);
+
+    const res = await page.request.get("/api/export-pdf");
+    if (!res.ok()) {
+      const errSnippet = await res.text().catch(() => "(binary or empty)");
+      throw new Error(`PDF export HTTP ${res.status()}: ${errSnippet.slice(0, 300)}`);
+    }
+
+    const contentType = res.headers()["content-type"] ?? "";
+    expect(contentType).toContain("application/pdf");
+
+    const disposition = (res.headers()["content-disposition"] ?? "").toLowerCase();
+    expect(disposition).toContain("attachment");
+
+    const body = await res.body();
+    expect(body.byteLength).toBeGreaterThan(200);
+    expect(String.fromCharCode(body[0], body[1], body[2], body[3], body[4])).toBe("%PDF-");
   });
 
   test("golden asset chain: stock inflow ripples through dashboard and survives refresh", async ({
@@ -349,4 +385,129 @@ test.describe.serial("Tax Guard dashboard E2E", () => {
 
     await page.unroute("**/api/fx-rate**");
   });
+
+  // ── Canton Tax Ripple ────────────────────────────────────────────────────────
+
+  test("canton tax ripple: residence swap recalculates Safe-to-Spend and Zug hint", async ({
+    page,
+  }) => {
+    await loginAndOpenTaxDashboard(page);
+
+    // Step 0: Ensure we start from ZH
+    await selectResidenceCanton(page, "ZH");
+
+    // Step 1: Add 1 M CHF cash so canton wealth-tax differences are noticeable
+    const beforeDeposit = await captureTaxDashboardState(page);
+    await submitAssetTransaction({
+      page,
+      assetType: "cash",
+      actionType: "INFLOW",
+      amount: "1'000'000.00",
+      description: "e2e-canton-ripple-1m-cash",
+      expectedTotalAssetsRappen: beforeDeposit.totalAssetsRappen + ONE_MILLION_CHF_RAPPEN,
+    });
+
+    // Step 2: Baseline in ZH
+    const zhSafeToSpend = await parseSafeToSpendRappen(page);
+    await expect(page.getByTestId("tax-optimization-hint")).toBeVisible();
+
+    // Step 3: Swap → ZG (lower wealth-tax canton)
+    await test.step("select ZG: safe-to-spend increases, Zug hint disappears", async () => {
+      await selectResidenceCanton(page, "ZG");
+
+      const zgSafeToSpend = await parseSafeToSpendRappen(page);
+      expect(zgSafeToSpend, "ZG safe-to-spend > ZH (lower wealth tax)").toBeGreaterThan(
+        zhSafeToSpend,
+      );
+      await expect(page.getByTestId("tax-optimization-hint")).not.toBeVisible();
+    });
+
+    // Step 4: Refresh — ZG persists
+    await test.step("refresh: ZG persists in selector and tax summary", async () => {
+      await page.reload();
+      await expect(page.getByTestId("tax-summary-canton")).toContainText("· ZG", {
+        timeout: 15_000,
+      });
+      const zgAfterReload = await parseSafeToSpendRappen(page);
+      expect(zgAfterReload).toBeGreaterThan(zhSafeToSpend);
+    });
+
+    // Step 5: Swap → GE (different canton than ZG)
+    await test.step("select GE: safe-to-spend changes, Zug hint reappears", async () => {
+      const zgSafeToSpendBeforeGe = await parseSafeToSpendRappen(page);
+      await selectResidenceCanton(page, "GE");
+
+      const geSafeToSpend = await parseSafeToSpendRappen(page);
+      // GE wealth tax (demo) is higher than ZG, but combined income+wealth may differ.
+      // Key invariant: the value CHANGED (recalculation happened) and is NOT equal to ZH
+      // (since GE wealth tax < ZH wealth tax in the demo brackets).
+      expect(geSafeToSpend, "GE safe-to-spend must differ from ZG after canton switch").not.toBe(
+        zgSafeToSpendBeforeGe,
+      );
+      expect(geSafeToSpend, "GE safe-to-spend must be higher than ZH baseline").toBeGreaterThan(
+        zhSafeToSpend,
+      );
+      // Not in ZG → Zug optimisation hint must reappear.
+      await expect(page.getByTestId("tax-optimization-hint")).toBeVisible();
+    });
+  });
 });
+
+test("tax statement PDF export returns 401 without session", async ({ browser }) => {
+  const port = String(process.env.PORT ?? "4000");
+  const baseURL = `http://127.0.0.1:${port}`;
+  const context = await browser.newContext({ baseURL });
+  const res = await context.request.get("/api/export-pdf");
+  expect(res.status()).toBe(401);
+  await context.close();
+});
+
+// ─── Canton Tax Ripple helpers (used in describe above) ──────────────────────
+
+const ONE_MILLION_CHF_RAPPEN = 100_000_000n;
+
+async function parseSafeToSpendRappen(page: Page): Promise<bigint> {
+  const raw = await page.getByTestId("safe-to-spend-value").innerText();
+  return parseFormattedChfToRappen(raw);
+}
+
+/**
+ * Selects a new residence canton via the UI selector and waits for the server
+ * round-trip to complete. Fails fast on HTTP errors instead of timing out.
+ *
+ * Key fix vs. prior version: the response listener is registered BEFORE
+ * `selectOption` is called, eliminating the race condition where the network
+ * response could arrive before the test registered its listener.
+ */
+async function selectResidenceCanton(page: Page, canton: string): Promise<void> {
+  const select = page.getByTestId("residence-canton-select");
+  const summaryEl = page.getByTestId("tax-summary-canton");
+
+  // Early exit — already on target canton.
+  const current = await summaryEl.innerText().catch(() => "");
+  if (current.includes(`· ${canton}`)) return;
+
+  // Register BEFORE triggering: prevents the race where the server responds
+  // faster than Playwright can register waitForResponse.
+  const responsePromise = page.waitForResponse(
+    (r) =>
+      r.request().method() === "POST" &&
+      r.url().includes("/dashboard/tax") &&
+      r.url().includes(".data"),
+    { timeout: 20_000 },
+  );
+
+  await select.selectOption({ value: canton });
+
+  const res = await responsePromise;
+  if (!res.ok()) {
+    const body = await res.text().catch(() => "(unreadable)");
+    throw new Error(
+      `Canton update returned HTTP ${res.status()} — server error: ${body.slice(0, 400)}`,
+    );
+  }
+
+  // Successful action triggers loader revalidation; wait for UI to reflect the new canton.
+  await expect(summaryEl).toContainText(`· ${canton}`, { timeout: 20_000 });
+}
+

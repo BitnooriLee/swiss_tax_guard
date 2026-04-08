@@ -14,9 +14,13 @@
 
 import type { Route } from "./+types/home";
 
+import { ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { redirect } from "react-router";
 
+import { getSessionUser } from "~/core/lib/guards.server";
 import i18next from "~/core/lib/i18next.server";
+import makeServerClient from "~/core/lib/supa-client.server";
 
 /**
  * Meta function for setting page metadata
@@ -54,10 +58,13 @@ export const meta: Route.MetaFunction = ({ data }) => {
  * @returns Object with translated title and subtitle strings
  */
 export async function loader({ request }: Route.LoaderArgs) {
-  // Get a translation function for the user's locale from the request
+  const [client] = makeServerClient(request);
+  const user = await getSessionUser(client);
+  if (user) {
+    throw redirect("/dashboard/tax");
+  }
+
   const t = await i18next.getFixedT(request);
-  
-  // Return translated strings for use in both the component and meta function
   return {
     title: t("home.title"),
     subtitle: t("home.subtitle"),
@@ -88,7 +95,13 @@ export default function Home() {
   const { t } = useTranslation();
   
   return (
-    <div className="flex flex-col items-center justify-center gap-2.5">
+    <div className="flex flex-col items-center justify-center gap-4">
+      <span
+        className="flex size-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+        aria-hidden
+      >
+        <ShieldCheck className="size-8" strokeWidth={2.25} />
+      </span>
       {/* Main headline with responsive typography */}
       <h1 className="text-4xl font-extrabold tracking-tight lg:text-6xl">
         {t("home.title")}

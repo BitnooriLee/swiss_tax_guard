@@ -59,7 +59,10 @@ export async function getCurrentBalances(
     .eq("user_id", userId);
 
   if (error) {
-    throw error;
+    if (import.meta.env.DEV) {
+      console.error("[getCurrentBalances]", error.message);
+    }
+    return { ...EMPTY_BALANCES };
   }
 
   const balances: CurrentBalances = { ...EMPTY_BALANCES };
@@ -93,7 +96,13 @@ export async function sumUserAssetLedgerRappen(
 export type SwissTaxContextRow = {
   canton: string;
   municipality_id: string;
+  pillar_3a_contribution_rappen: bigint;
 };
+
+function isMissingPillar3aColumnError(error: { message: string }): boolean {
+  const m = error.message;
+  return m.includes("pillar_3a_contribution_rappen") && m.includes("does not exist");
+}
 
 /**
  * Swiss residency context for bracket lookup (RLS-scoped).
@@ -104,19 +113,99 @@ export async function getSwissTaxContextForUser(
 ): Promise<SwissTaxContextRow | null> {
   const { data, error } = await client
     .from("swiss_tax_contexts")
-    .select("canton, municipality_id")
+    .select("canton, municipality_id, pillar_3a_contribution_rappen")
     .eq("profile_id", profileId)
     .maybeSingle();
 
-  if (error) {
-    throw error;
+  if (!error && data) {
+    return {
+      canton: data.canton,
+      municipality_id: data.municipality_id,
+      pillar_3a_contribution_rappen: toBigIntAmount(
+        data.pillar_3a_contribution_rappen,
+      ),
+    };
   }
-  return data;
+
+  if (error && isMissingPillar3aColumnError(error)) {
+    const { data: legacy, error: legacyError } = await client
+      .from("swiss_tax_contexts")
+      .select("canton, municipality_id")
+      .eq("profile_id", profileId)
+      .maybeSingle();
+    if (legacyError) {
+      if (import.meta.env.DEV) {
+        console.error("[getSwissTaxContextForUser]", legacyError.message);
+      }
+      return null;
+    }
+    if (!legacy) {
+      return null;
+    }
+    return {
+      canton: legacy.canton,
+      municipality_id: legacy.municipality_id,
+      pillar_3a_contribution_rappen: 0n,
+    };
+  }
+
+  if (error && import.meta.env.DEV) {
+    console.error("[getSwissTaxContextForUser]", error.message);
+  }
+  return null;
 }
 
 /**
  * Canonical canton for tax simulation: profile residence, then swiss_tax_contexts, then ZH.
  */
+/** One ledger row for PDF / compliance export (RLS-scoped). */
+export type AssetLedgerReportRow = {
+  assetTypeKey: keyof AssetBucketBalances;
+  description: string | null;
+  originalCurrency: string;
+  originalAmountMinor: bigint;
+  fxRateDisplay: string;
+  chfRappen: bigint;
+};
+
+/**
+ * Ordered asset ledger lines with original currency and CHF booking (immutable ledger).
+ */
+export async function getAssetLedgerReportRows(
+  client: SupabaseClient<Database>,
+  userId: string,
+): Promise<AssetLedgerReportRow[]> {
+  const { data, error } = await client
+    .from("asset_ledger")
+    .select(
+      "asset_type,description,original_currency,original_amount,fx_rate,amount,created_at",
+    )
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  const rows: AssetLedgerReportRow[] = [];
+  for (const row of data ?? []) {
+    const key = mapAssetTypeToBalanceKey(String(row.asset_type ?? ""));
+    if (!key) continue;
+    rows.push({
+      assetTypeKey: key,
+      description:
+        row.description !== null && row.description !== undefined
+          ? String(row.description).trim() || null
+          : null,
+      originalCurrency: String(row.original_currency ?? "CHF").trim().toUpperCase(),
+      originalAmountMinor: toBigIntAmount(row.original_amount),
+      fxRateDisplay: String(row.fx_rate ?? "1").trim(),
+      chfRappen: toBigIntAmount(row.amount),
+    });
+  }
+  return rows;
+}
+
 export async function getEffectiveResidenceCanton(
   client: SupabaseClient<Database>,
   profileId: string,

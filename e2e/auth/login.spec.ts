@@ -66,12 +66,13 @@ test.describe("User Login UI", () => {
    * 
    * This ensures that users have multiple authentication options beyond
    * the traditional email/password approach, including:
-   * - Social logins (GitHub, Kakao)
+   * - Social logins (Google, GitHub, Apple)
    * - Passwordless options (OTP, Magic Link)
    */
   test("should show alternative login methods", async ({ page }) => {
+    await expect(page.getByText("Continue with Google")).toBeVisible();
     await expect(page.getByText("Continue with GitHub")).toBeVisible();
-    await expect(page.getByText("Continue with Kakao")).toBeVisible();
+    await expect(page.getByText("Continue with Apple")).toBeVisible();
     await expect(page.getByText("Continue with OTP")).toBeVisible();
     await expect(page.getByText("Continue with Magic Link")).toBeVisible();
   });

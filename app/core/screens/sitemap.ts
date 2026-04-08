@@ -5,10 +5,7 @@
  * content directories and combining them with static routes. The sitemap helps search
  * engines discover and index the application's pages, improving SEO performance.
  *
- * The module automatically includes:
- * - Blog posts from MDX files in the blog directory
- * - Legal pages from MDX files in the legal directory
- * - Custom static routes defined in the code
+ * The module automatically includes legal MDX pages and static marketing routes.
  *
  * The sitemap is generated on-demand when the route is accessed, ensuring it always
  * contains the latest content without requiring a rebuild of the application.
@@ -25,24 +22,16 @@ import path from "node:path";
  * 
  * The function performs these steps:
  * 1. Gets the site domain from environment variables
- * 2. Scans the blog directory for MDX files and converts filenames to URLs
- * 3. Scans the legal directory for MDX files and converts filenames to URLs
- * 4. Combines these with static routes like homepage, login, and registration
- * 5. Formats all URLs according to the sitemap XML specification
- * 6. Returns an XML response with the proper content type header
+ * 2. Scans the legal directory for MDX files and converts filenames to URLs
+ * 3. Combines these with static routes (home, login, join)
+ * 4. Formats all URLs according to the sitemap XML specification
+ * 5. Returns an XML response with the proper content type header
  * 
  * @returns {Response} XML response containing the sitemap
  */
 export async function loader() {
   // Get the site domain from environment variables
   const DOMAIN = process.env.SITE_URL;
-
-  // Scan the blog directory for MDX files and convert to URLs
-  const blogUrls = (
-    await readdir(path.join(process.cwd(), "app", "features", "blog", "docs"))
-  )
-    .filter((file) => file.endsWith(".mdx")) // Only include MDX files
-    .map((file) => `/blog/${file.replace(".mdx", "")}`);
 
   // Scan the legal directory for MDX files and convert to URLs
   const legalUrls = (
@@ -55,7 +44,7 @@ export async function loader() {
   const customUrls = ["/", "/login", "/join"];
 
   // Combine all URLs and format them according to sitemap protocol
-  const sitemapUrls = [...blogUrls, ...legalUrls, ...customUrls].map((url) => {
+  const sitemapUrls = [...legalUrls, ...customUrls].map((url) => {
     return `<url>
       <loc>${DOMAIN}${url}</loc>
       <lastmod>${new Date().toISOString()}</lastmod>

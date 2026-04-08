@@ -47,9 +47,12 @@ export async function action({ request }: LoaderFunctionArgs) {
   // Extract locale from URL parameters
   const url = new URL(request.url);
   
-  // Validate locale against supported languages
-  // This will throw an error if the locale is not supported
-  const locale = localeSchema.parse(url.searchParams.get("locale"));
+  const rawLocale = url.searchParams.get("locale");
+  const parsed = localeSchema.safeParse(rawLocale);
+  if (!parsed.success) {
+    return data({ error: "Invalid or missing locale." }, { status: 400 });
+  }
+  const locale = parsed.data;
   
   // Return response with cookie header to set the new locale
   return data(null, {

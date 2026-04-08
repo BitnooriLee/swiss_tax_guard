@@ -8,22 +8,22 @@
  *
  * The configuration includes:
  * - Cookie-based language preference storage with proper security settings
- * - Support for multiple languages (English, Spanish, Korean)
+ * - Support for multiple languages (English, German, French, Korean)
  * - In-memory translation resources for each supported language
  * - Integration with Remix for server-side rendering
  *
  * This module is critical for ensuring that the application can render content in
  * the user's preferred language on the server before sending it to the client.
  */
-import resourcesToBackend from "i18next-resources-to-backend";
 import { createCookie } from "react-router";
 import { RemixI18Next } from "remix-i18next/server";
 
 // Import the base i18n configuration
 import i18n from "~/i18n";
 // Import translation resources for each supported language
+import de from "~/locales/de";
 import en from "~/locales/en";
-import es from "~/locales/es";
+import fr from "~/locales/fr";
 import ko from "~/locales/ko";
 
 /**
@@ -67,15 +67,15 @@ const i18next = new RemixI18Next({
     ...i18n,
     // In-memory translation resources for each supported language
     resources: {
-      // English translations
       en: {
         common: en,
       },
-      // Spanish translations
-      es: {
-        common: es,
+      de: {
+        common: de,
       },
-      // Korean translations
+      fr: {
+        common: fr,
+      },
       ko: {
         common: ko,
       },

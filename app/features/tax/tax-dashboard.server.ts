@@ -1,25 +1,26 @@
 /**
  * Server-only bundle for the tax dashboard: seeds, liability, Safe-to-Spend.
  */
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "database.types";
+
+import taxRatesJson from "~/db/seeds/tax_rates.json";
 
 import type { TaxDashboardCalculation } from "./tax.types";
 import {
   EstvJsonAdapter,
   type EstvSeedDocumentJson,
+  calculate3aTaxSaving,
   calculateCantonWealthTax,
+  clampPillar3aContributionRappen,
   chfWholeToRappen,
   computeTaxLiability,
   getTaxCategoryBreakdown,
   getSafeToSpend,
   splitIncomeTaxForDashboardStub,
 } from "./services.server";
+import { DEMO_RESIDENCE_CANTON_CODES } from "./data/tax-constants";
 import {
   getCurrentBalances,
   getEffectiveResidenceCanton,
@@ -27,8 +28,6 @@ import {
 } from "./queries.server";
 
 const DEMO_TAXABLE_INCOME_RAPPEN = 120_000n * 100n;
-
-const ALLOWED_RESIDENCE_CANTONS = new Set(["ZH", "ZG", "GE"]);
 
 /**
  * Persists residence canton on the profile and keeps `swiss_tax_contexts` aligned for ESTV lookups.
@@ -39,7 +38,7 @@ export async function updateResidenceCantonForUser(
   rawCanton: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const canton = rawCanton.trim().toUpperCase().slice(0, 2);
-  if (!ALLOWED_RESIDENCE_CANTONS.has(canton)) {
+  if (!DEMO_RESIDENCE_CANTON_CODES.has(canton)) {
     return { ok: false, error: "Invalid canton." };
   }
 
@@ -48,8 +47,68 @@ export async function updateResidenceCantonForUser(
     .update({ residence_canton: canton })
     .eq("profile_id", userId);
   if (profileError) {
-    return { ok: false, error: "Failed to update profile." };
+    return {
+      ok: false,
+      error: `Failed to update profile: ${profileError.message}`,
+    };
   }
+
+  const { data: existingCtx, error: selectCtxError } = await client
+    .from("swiss_tax_contexts")
+    .select("profile_id")
+    .eq("profile_id", userId)
+    .maybeSingle();
+
+  if (selectCtxError) {
+    return {
+      ok: false,
+      error: `Failed to read tax context: ${selectCtxError.message}`,
+    };
+  }
+
+  if (existingCtx) {
+    const { error: updateCtxError } = await client
+      .from("swiss_tax_contexts")
+      .update({ canton })
+      .eq("profile_id", userId);
+    if (updateCtxError) {
+      return {
+        ok: false,
+        error: `Failed to sync tax context: ${updateCtxError.message}`,
+      };
+    }
+  } else {
+    // Omit pillar_3a_contribution_rappen: DBs with migration 0007 get DEFAULT 0;
+    // older DBs without that column would reject the insert if we sent the field.
+    const { error: insertCtxError } = await client.from("swiss_tax_contexts").insert({
+      profile_id: userId,
+      canton,
+      municipality_id: "",
+      marital_status: "single",
+      church_tax: false,
+      children_count: 0,
+    });
+    if (insertCtxError) {
+      return {
+        ok: false,
+        error: `Failed to create tax context: ${insertCtxError.message}`,
+      };
+    }
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Persists Pillar 3a contribution (Rappen) on `swiss_tax_contexts`, clamped to the legal max.
+ */
+export async function updatePillar3aContributionForUser(
+  client: SupabaseClient<Database>,
+  userId: string,
+  contributionRappen: bigint,
+  taxYear: number,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const capped = clampPillar3aContributionRappen(contributionRappen, taxYear);
 
   const { data: existingCtx, error: selectCtxError } = await client
     .from("swiss_tax_contexts")
@@ -64,12 +123,13 @@ export async function updateResidenceCantonForUser(
   if (existingCtx) {
     const { error: updateCtxError } = await client
       .from("swiss_tax_contexts")
-      .update({ canton })
+      .update({ pillar_3a_contribution_rappen: capped.toString() })
       .eq("profile_id", userId);
     if (updateCtxError) {
-      return { ok: false, error: "Failed to sync tax context." };
+      return { ok: false, error: "Failed to update Pillar 3a contribution." };
     }
   } else {
+    const canton = await getEffectiveResidenceCanton(client, userId);
     const { error: insertCtxError } = await client.from("swiss_tax_contexts").insert({
       profile_id: userId,
       canton,
@@ -77,6 +137,7 @@ export async function updateResidenceCantonForUser(
       marital_status: "single",
       church_tax: false,
       children_count: 0,
+      pillar_3a_contribution_rappen: capped.toString(),
     });
     if (insertCtxError) {
       return { ok: false, error: "Failed to create tax context." };
@@ -86,17 +147,10 @@ export async function updateResidenceCantonForUser(
   return { ok: true };
 }
 
-function loadEstvDocument(): EstvSeedDocumentJson {
-  const here = dirname(fileURLToPath(import.meta.url));
-  const path = join(here, "..", "..", "db", "seeds", "tax_rates.json");
-  const raw = readFileSync(path, "utf-8");
-  return JSON.parse(raw) as EstvSeedDocumentJson;
-}
-
 let cachedDocument: EstvSeedDocumentJson | null = null;
 
 function getEstvDocument(): EstvSeedDocumentJson {
-  cachedDocument ??= loadEstvDocument();
+  cachedDocument ??= taxRatesJson as EstvSeedDocumentJson;
   return cachedDocument;
 }
 
@@ -145,7 +199,7 @@ export async function computeTaxDashboardCalculation(
   });
 
   const taxableIncomeRappen = DEMO_TAXABLE_INCOME_RAPPEN;
-  const estimatedIncomeTaxRappen =
+  const estimatedIncomeTaxGrossRappen =
     brackets.length > 0
       ? computeTaxLiability(taxableIncomeRappen, brackets)
       : 0n;
@@ -153,6 +207,23 @@ export async function computeTaxDashboardCalculation(
     taxableIncomeRappen,
     brackets,
   );
+
+  const pillar3aContributionRappen = clampPillar3aContributionRappen(
+    taxContext?.pillar_3a_contribution_rappen ?? 0n,
+    taxYear,
+  );
+  const marginal3aSavingRappen = calculate3aTaxSaving(
+    pillar3aContributionRappen,
+    marginalTaxRateBps,
+  );
+  const pillar3aTaxSavingRappen =
+    marginal3aSavingRappen > estimatedIncomeTaxGrossRappen
+      ? estimatedIncomeTaxGrossRappen
+      : marginal3aSavingRappen;
+  const estimatedIncomeTaxRappen =
+    estimatedIncomeTaxGrossRappen > pillar3aTaxSavingRappen
+      ? estimatedIncomeTaxGrossRappen - pillar3aTaxSavingRappen
+      : 0n;
 
   const taxSummary = splitIncomeTaxForDashboardStub(estimatedIncomeTaxRappen);
   const taxCategoryBreakdown = getTaxCategoryBreakdown(
@@ -198,6 +269,8 @@ export async function computeTaxDashboardCalculation(
     totalAssetsRappen,
     safetyBufferRappen,
     estimatedIncomeTaxRappen,
+    pillar3aContributionRappen,
+    pillar3aTaxSavingRappen,
     estimatedCantonTax,
     zugWealthTaxRappen,
     taxSummary,

@@ -1,173 +1,32 @@
-import {
-  AudioWaveformIcon,
-  BookOpenIcon,
-  BotIcon,
-  BriefcaseIcon,
-  BuildingIcon,
-  CommandIcon,
-  FrameIcon,
-  GalleryVerticalEndIcon,
-  HeartHandshakeIcon,
-  LayoutDashboardIcon,
-  LineChartIcon,
-  MapIcon,
-  MegaphoneIcon,
-  PieChartIcon,
-  RocketIcon,
-  Settings2Icon,
-  ShieldCheck,
-  SquareTerminalIcon,
-  Target,
-  UsersIcon,
-} from "lucide-react";
+import { ShieldCheck } from "lucide-react";
+import { Link } from "react-router";
 
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
   SidebarRail,
 } from "~/core/components/ui/sidebar";
 
 import SidebarMain from "./sidebar-main";
-import SidebarProjects from "./sidebar-projects";
-import TeamSwitcher from "./sidebar-team-switcher";
 import SidebarUser from "./sidebar-user";
 
-const data = {
-  teams: [
-    {
-      name: "SalesForge",
-      logo: BuildingIcon,
-      plan: "Enterprise",
-    },
-    {
-      name: "TechCo Solutions",
-      logo: BriefcaseIcon,
-      plan: "Startup",
-    },
-    {
-      name: "GrowthMate",
-      logo: RocketIcon,
-      plan: "Free",
-    },
-  ],
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "#",
-      icon: LayoutDashboardIcon,
-      isActive: true,
-      items: [
-        {
-          title: "Overview",
-          url: "/dashboard",
-        },
-        {
-          title: "Analytics",
-          url: "#",
-        },
-        {
-          title: "Reports",
-          url: "#",
-        },
-        {
-          title: "Tax Guard",
-          url: "/dashboard/tax",
-        },
-      ],
-    },
-    {
-      title: "Tax Guard",
-      url: "/dashboard/tax",
-      icon: ShieldCheck,
-      items: [
-        {
-          title: "Tax Dashboard",
-          url: "/dashboard/tax",
-        },
-      ],
-    },
-    {
-      title: "Customers",
-      url: "#",
-      icon: UsersIcon,
-      items: [
-        {
-          title: "Contacts",
-          url: "#",
-        },
-        {
-          title: "Companies",
-          url: "#",
-        },
-        {
-          title: "Deals",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Sales",
-      url: "#",
-      icon: LineChartIcon,
-      items: [
-        {
-          title: "Pipeline",
-          url: "#",
-        },
-        {
-          title: "Opportunities",
-          url: "#",
-        },
-        {
-          title: "Quotes",
-          url: "#",
-        },
-        {
-          title: "Invoices",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: Settings2Icon,
-      items: [
-        {
-          title: "Workspace",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Integrations",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  projects: [
-    {
-      name: "Sales Team",
-      url: "#",
-      icon: Target,
-    },
-    {
-      name: "Customer Success",
-      url: "#",
-      icon: HeartHandshakeIcon,
-    },
-    {
-      name: "Marketing",
-      url: "#",
-      icon: MegaphoneIcon,
-    },
-  ],
-};
+const navMain = [
+  {
+    title: "SwissTax Guard",
+    url: "/dashboard/tax",
+    icon: ShieldCheck,
+    isActive: true,
+    items: [
+      { title: "Dashboard", url: "/dashboard/tax" },
+      { title: "Profile & settings", url: "/account/edit" },
+    ],
+  },
+];
 
 export default function DashboardSidebar({
   user,
@@ -179,14 +38,31 @@ export default function DashboardSidebar({
     avatarUrl: string;
   };
 }) {
+  const appName = import.meta.env.VITE_APP_NAME ?? "SwissTax Guard";
+
   return (
     <Sidebar collapsible="icon" variant="inset" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild>
+              <Link to="/dashboard/tax" viewTransition>
+                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                  <ShieldCheck className="size-4" />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">{appName}</span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    Tax &amp; assets
+                  </span>
+                </div>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarMain items={data.navMain} />
-        <SidebarProjects projects={data.projects} />
+        <SidebarMain items={navMain} />
       </SidebarContent>
       <SidebarFooter>
         <SidebarUser

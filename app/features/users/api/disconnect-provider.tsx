@@ -2,7 +2,7 @@
  * Disconnect Provider API Endpoint
  *
  * This file implements an API endpoint for disconnecting a third-party
- * authentication provider (like GitHub or Kakao) from a user's account.
+ * authentication provider (like GitHub) from a user's account.
  * It handles provider validation, authentication checks, and integration
  * with Supabase Auth API for identity unlinking.
  *
@@ -27,13 +27,13 @@ import makeServerClient from "~/core/lib/supa-client.server";
  * Validation schema for provider disconnection parameters
  *
  * This schema defines the required fields and validation rules:
- * - provider: Must be one of the supported providers (github, kakao)
+ * - provider: Must be one of the supported providers (github)
  *
  * The schema ensures that only supported providers can be disconnected,
  * preventing potential security issues with unsupported providers.
  */
 const schema = z.object({
-  provider: z.enum(["github", "kakao"]),
+  provider: z.enum(["github"]),
 });
 
 /**
@@ -42,7 +42,7 @@ const schema = z.object({
  * This function handles the complete provider disconnection flow:
  * 1. Validates that the request method is DELETE
  * 2. Authenticates the user making the request
- * 3. Validates the provider type (github, kakao)
+ * 3. Validates the provider type (github)
  * 4. Verifies that the user has the specified identity connected
  * 5. Unlinks the identity using Supabase Auth API
  * 6. Returns appropriate success or error responses

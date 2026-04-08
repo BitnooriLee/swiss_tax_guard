@@ -26,6 +26,10 @@ export type TaxDashboardCalculation = {
   totalAssetsRappen: bigint;
   safetyBufferRappen: bigint;
   estimatedIncomeTaxRappen: bigint;
+  /** Annual Pillar 3a contribution persisted on tax context (Rappen, statutory cap applied). */
+  pillar3aContributionRappen: bigint;
+  /** Estimated income-tax reduction from 3a at marginal rate (Rappen). */
+  pillar3aTaxSavingRappen: bigint;
   /** Progressive demo wealth tax for `selectedCanton` (Rappen). */
   estimatedCantonTax: bigint;
   /** Same asset base, demo ZG wealth tax (for relocation hint). */

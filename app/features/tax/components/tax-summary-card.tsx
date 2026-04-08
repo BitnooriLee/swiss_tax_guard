@@ -55,7 +55,7 @@ export default function TaxSummaryCard({
         <h2 id="tax-summary-heading" className="text-lg font-semibold">
           Estimated income tax
         </h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground" data-testid="tax-summary-canton">
           {taxYear} · {canton}
         </p>
       </div>

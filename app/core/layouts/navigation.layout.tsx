@@ -5,11 +5,12 @@ import { Await, Outlet } from "react-router";
 
 import Footer from "../components/footer";
 import { NavigationBar } from "../components/navigation-bar";
+import { getSessionUser } from "../lib/guards.server";
 import makeServerClient from "../lib/supa-client.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
-  const userPromise = client.auth.getUser();
+  const userPromise = getSessionUser(client);
   return { userPromise };
 }
 
@@ -18,8 +19,11 @@ export default function NavigationLayout({ loaderData }: Route.ComponentProps) {
   return (
     <div className="flex min-h-screen flex-col justify-between">
       <Suspense fallback={<NavigationBar loading={true} />}>
-        <Await resolve={userPromise}>
-          {({ data: { user } }) =>
+        <Await
+          resolve={userPromise}
+          errorElement={<NavigationBar loading={false} />}
+        >
+          {(user) =>
             user === null ? (
               <NavigationBar loading={false} />
             ) : (

@@ -1,13 +1,4 @@
-import {
-  BadgeCheck,
-  Bell,
-  ChevronsUpDown,
-  CreditCard,
-  LogOut,
-  Sparkles,
-  UserCircle2Icon,
-  UserIcon,
-} from "lucide-react";
+import { ChevronsUpDown, LogOut, UserCircle2Icon } from "lucide-react";
 import { Link } from "react-router";
 
 import {
@@ -86,28 +77,11 @@ export default function SidebarUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Sparkles />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
               <DropdownMenuItem asChild>
                 <Link to="/account/edit" viewTransition>
                   <UserCircle2Icon />
-                  Account
+                  Profile &amp; settings
                 </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/dashboard/payments">
-                  <CreditCard />
-                  Payments
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

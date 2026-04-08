@@ -91,8 +91,9 @@ test.describe("User Registration UI", () => {
    * beyond the traditional email/password approach
    */
   test("should show alternative login methods", async ({ page }) => {
+    await expect(page.getByText("Continue with Google")).toBeVisible();
     await expect(page.getByText("Continue with GitHub")).toBeVisible();
-    await expect(page.getByText("Continue with Kakao")).toBeVisible();
+    await expect(page.getByText("Continue with Apple")).toBeVisible();
   });
 
   /**

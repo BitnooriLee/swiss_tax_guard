@@ -7,7 +7,6 @@ import {
   CardTitle,
 } from "~/core/components/ui/card";
 import { GithubLogo } from "~/features/auth/components/logos/github";
-import { KakaoLogo } from "~/features/auth/components/logos/kakao";
 
 import {
   ConnectProviderButton,
@@ -19,11 +18,6 @@ const enabledProviders = [
     name: "Github",
     key: "github",
     logo: <GithubLogo />,
-  },
-  {
-    name: "Kakao",
-    key: "kakao",
-    logo: <KakaoLogo />,
   },
 ];
 

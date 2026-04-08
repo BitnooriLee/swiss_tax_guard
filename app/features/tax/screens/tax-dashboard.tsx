@@ -1,8 +1,16 @@
 import type { Route } from "./+types/tax-dashboard";
 
-import { data, useFetcher, useLoaderData, useNavigation } from "react-router";
+import { FileDown } from "lucide-react";
+import {
+  data,
+  redirect,
+  useFetcher,
+  useLoaderData,
+  useNavigation,
+} from "react-router";
 
-import { requireAuthentication } from "~/core/lib/guards.server";
+import { Button } from "~/core/components/ui/button";
+import { getSessionUser } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { getAssetHistory } from "~/features/assets/queries.server";
 import { getUserProfile } from "~/features/users/queries";
@@ -11,14 +19,22 @@ import AssetHistoryChart from "../components/asset-history-chart";
 import SafeToSpendDial from "../components/safe-to-spend-dial";
 import SafeToSpendHero from "../components/safe-to-spend-hero";
 import AssetActionSheet from "../components/asset-action-sheet";
-import ScenarioSimulator from "../components/scenario-simulator";
+import Pillar3aOptimizer from "../components/pillar-3a-optimizer";
 import TaxInsights from "../components/tax-insights";
 import TaxSummaryCard from "../components/tax-summary-card";
 import TimeRangePicker from "../components/time-range-picker";
 import { formatCHF } from "../lib/format-chf";
 import { parseCHFToRappen } from "../lib/parse-chf";
 import {
+  deserializeAssetHistory,
+  deserializeTaxDashboardCalculation,
+  serializeAssetHistory,
+  serializeTaxDashboardCalculation,
+} from "../lib/tax-dashboard-loader-json";
+import { RESIDENCE_CANTON_OPTIONS } from "../data/tax-constants";
+import {
   computeTaxDashboardCalculation,
+  updatePillar3aContributionForUser,
   updateResidenceCantonForUser,
 } from "../tax-dashboard.server";
 import type { TaxDashboardCalculation } from "../tax.types";
@@ -74,11 +90,11 @@ function zugWealthTaxOptimizationHint(
  */
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
-  await requireAuthentication(client);
-  const {
-    data: { user },
-  } = await client.auth.getUser();
-  const uid = user!.id;
+  const user = await getSessionUser(client);
+  if (!user) {
+    throw redirect("/login");
+  }
+  const uid = user.id;
 
   const profile = await getUserProfile(client, { userId: uid });
   const selectedHistoryDays = parseHistoryDaysFromUrl(request.url);
@@ -92,25 +108,40 @@ export async function loader({ request }: Route.LoaderArgs) {
     userDisplayName: profile?.name?.trim() || user?.email || "Account",
     userEmail: user?.email ?? null,
     selectedHistoryDays,
-    taxCalculation,
-    assetHistory,
+    taxCalculation: serializeTaxDashboardCalculation(taxCalculation),
+    assetHistory: serializeAssetHistory(assetHistory),
   };
 }
 
 export async function action({ request }: Route.ActionArgs) {
   const [client] = makeServerClient(request);
-  await requireAuthentication(client);
-
-  const {
-    data: { user },
-  } = await client.auth.getUser();
-  const userId = user?.id;
-  if (!userId) {
+  const sessionUser = await getSessionUser(client);
+  if (!sessionUser) {
     return data({ success: false, error: "Unauthorized request." }, { status: 401 });
   }
+  const userId = sessionUser.id;
 
   const formData = await request.formData();
   const intent = formData.get("intent");
+
+  if (intent === "apply-pillar-3a") {
+    const raw = formData.get("pillar_3a_contribution_rappen");
+    let contributionRappen = 0n;
+    if (typeof raw === "string" && /^-?\d+$/.test(raw.trim())) {
+      contributionRappen = BigInt(raw.trim());
+    }
+    const taxYear = new Date().getFullYear();
+    const result = await updatePillar3aContributionForUser(
+      client,
+      userId,
+      contributionRappen,
+      taxYear,
+    );
+    if (!result.ok) {
+      return data({ success: false, error: result.error }, { status: 400 });
+    }
+    return { success: true };
+  }
 
   if (intent === "update-canton") {
     const rawCanton = formData.get("canton");
@@ -243,6 +274,7 @@ function TaxDashboardBody({
     taxCategoryBreakdown,
     estimatedCantonTax,
     zugWealthTaxRappen,
+    pillar3aContributionRappen,
   } = data;
 
   const taxOptimizationHint = zugWealthTaxOptimizationHint(
@@ -278,7 +310,12 @@ function TaxDashboardBody({
         items={taxCategoryBreakdown}
         taxOptimizationHint={taxOptimizationHint}
       />
-      <ScenarioSimulator marginalRateBps={marginalTaxRateBps} />
+      <Pillar3aOptimizer
+        key={`${taxYear}-${pillar3aContributionRappen.toString()}`}
+        marginalRateBps={marginalTaxRateBps}
+        taxYear={taxYear}
+        savedContributionRappen={pillar3aContributionRappen}
+      />
       <TaxSummaryCard
         federalRappen={taxSummary.federalRappen}
         cantonalRappen={taxSummary.cantonalRappen}
@@ -326,15 +363,23 @@ function ResidenceCantonSelect({ selectedCanton }: { selectedCanton: string }) {
         key={selectedCanton}
         defaultValue={selectedCanton}
         disabled={fetcher.state !== "idle"}
+        data-testid="residence-canton-select"
         onChange={(event) => {
           fetcher.submit(event.currentTarget.form);
         }}
         className="min-w-[10.5rem] cursor-pointer rounded-md border-0 bg-muted/50 py-1.5 pl-2 pr-8 text-sm text-foreground shadow-none outline-none ring-0 transition-[box-shadow,background-color] focus:bg-muted focus:ring-2 focus:ring-emerald-600/25 focus:ring-offset-0 dark:focus:ring-emerald-500/30"
       >
-        <option value="ZH">Zurich (ZH)</option>
-        <option value="ZG">Zug (ZG)</option>
-        <option value="GE">Geneva (GE)</option>
+        {RESIDENCE_CANTON_OPTIONS.map(({ code, label }) => (
+          <option key={code} value={code}>
+            {label}
+          </option>
+        ))}
       </select>
+      {fetcher.data && !fetcher.data.success ? (
+        <p className="mt-1 text-xs text-destructive" data-testid="canton-update-error">
+          {(fetcher.data as { success: false; error: string }).error}
+        </p>
+      ) : null}
     </fetcher.Form>
   );
 }
@@ -344,9 +389,12 @@ export default function TaxDashboardScreen() {
     userDisplayName,
     userEmail,
     selectedHistoryDays,
-    taxCalculation,
-    assetHistory,
+    taxCalculation: taxCalculationJson,
+    assetHistory: assetHistoryJson,
   } = useLoaderData<typeof loader>();
+
+  const taxCalculation = deserializeTaxDashboardCalculation(taxCalculationJson);
+  const assetHistory = deserializeAssetHistory(assetHistoryJson);
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -362,7 +410,15 @@ export default function TaxDashboardScreen() {
             ) : null}
           </p>
         </div>
-        <ResidenceCantonSelect selectedCanton={taxCalculation.selectedCanton} />
+        <div className="flex flex-col items-stretch gap-2 sm:items-end">
+          <Button variant="outline" size="sm" asChild>
+            <a href="/api/export-pdf" download>
+              <FileDown className="size-4" aria-hidden />
+              Download Statement
+            </a>
+          </Button>
+          <ResidenceCantonSelect selectedCanton={taxCalculation.selectedCanton} />
+        </div>
       </div>
 
       <TaxDashboardBody

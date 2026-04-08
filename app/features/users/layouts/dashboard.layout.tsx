@@ -7,29 +7,35 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "~/core/components/ui/sidebar";
+import { getSessionUser } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 import DashboardSidebar from "../components/dashboard-sidebar";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [client] = makeServerClient(request);
-  const {
-    data: { user },
-  } = await client.auth.getUser();
-  return {
-    user,
-  };
+  const sessionUser = await getSessionUser(client);
+  /** Plain strings only — avoids RR hydration JSON issues with full Supabase `User`. */
+  const sidebarUser = sessionUser
+    ? {
+        name:
+          String(sessionUser.user_metadata?.name ?? "").trim() || "Account",
+        email: sessionUser.email ?? "",
+        avatarUrl: String(sessionUser.user_metadata?.avatar_url ?? ""),
+      }
+    : null;
+  return { sidebarUser };
 }
 
 export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
-  const { user } = loaderData;
+  const { sidebarUser } = loaderData;
   return (
     <SidebarProvider>
       <DashboardSidebar
         user={{
-          name: user?.user_metadata.name ?? "",
-          avatarUrl: user?.user_metadata.avatar_url ?? "",
-          email: user?.email ?? "",
+          name: sidebarUser?.name ?? "",
+          avatarUrl: sidebarUser?.avatarUrl ?? "",
+          email: sidebarUser?.email ?? "",
         }}
       />
       <SidebarInset>

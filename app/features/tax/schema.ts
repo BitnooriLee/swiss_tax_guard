@@ -3,6 +3,7 @@
  */
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   char,
   date,
@@ -37,6 +38,12 @@ export const swiss_tax_contexts = pgTable(
     marital_status: maritalStatusEnum("marital_status").notNull(),
     church_tax: boolean("church_tax").notNull().default(false),
     children_count: smallint("children_count").notNull().default(0),
+    /** Annual Pillar 3a contribution used for tax simulation (Rappen). */
+    pillar_3a_contribution_rappen: bigint("pillar_3a_contribution_rappen", {
+      mode: "bigint",
+    })
+      .notNull()
+      .default(0n),
     moved_at: date("moved_at"),
     ...timestamps,
   },

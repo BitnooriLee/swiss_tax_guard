@@ -66,8 +66,17 @@ export async function getAssetHistory(
         .order("created_at", { ascending: true }),
     ]);
 
-  if (baselineError) throw baselineError;
-  if (rowsError) throw rowsError;
+  if (baselineError || rowsError) {
+    if (import.meta.env.DEV) {
+      console.error("[getAssetHistory]", baselineError ?? rowsError);
+    }
+    const flat: AssetHistoryPoint[] = [];
+    for (let i = 0; i < safeDays; i += 1) {
+      const day = addUtcDays(startInclusive, i);
+      flat.push({ date: dayKeyUtc(day), totalAmount: 0n });
+    }
+    return flat;
+  }
 
   let baseline = 0n;
   for (const row of baselineRows ?? []) {
