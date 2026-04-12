@@ -1,47 +1,154 @@
-# SwissTax Guard (STG)
+# Swiss Tax Guard (STG)
 
-> **Turning tax debt into spending confidence** — real-time tax liability and Safe-to-Spend guidance for Swiss residents.
+![Swiss Tax Guard — command center dashboard](dashboard_example.png)
 
-This repository extends the [Supaplate](https://supaplate.com/docs) stack (React Router 7, Supabase, Drizzle). Product scope and roadmap live in [`PROJECT_PLAN.md`](./PROJECT_PLAN.md); Swiss rules and engineering constraints.
+> **Turning tax debt into spending confidence** — a real-time tax liability and liquidity dashboard for Swiss residents that separates estimated tax from spendable cash.
 
-## What it does
+This repository extends the [Supaplate](https://supaplate.com/docs) stack (React Router 7, Supabase, Drizzle). Product vision and roadmap live in [`PROJECT_PLAN.md`](./PROJECT_PLAN.md). Swiss domain rules and engineering guardrails live in [`AI.md`](./AI.md).
 
-- **Safe-to-Spend** isolates estimated tax from liquid assets so day-to-day spending reflects what is actually disposable (formula : Safe-to-Spend = Total Assets - (Estimated Tax Liability + Safety Buffer)).
-- **Precision**: monetary amounts are modeled in **Rappen** (`bigint`); UI formats CHF for display.
-- **Dashboard** (`/tax`): Nordic-style layout with Safe-to-Spend hero/dial, tax breakdown, and asset mix (cash, crypto, stock) from the ledger.
+Screenshot source file: [`dashboard_example.png`](./dashboard_example.png) (repository root).
 
-## Currently implemented (vs. plan)
+---
 
-Aligned with **Phase 1 — High-precision foundation** and parts of **Phase 2 — Nordic UX** in `PROJECT_PLAN.md`:
+## Additional dashboard preview
 
-| Area | Status |
-|------|--------|
-| Schema: `profiles`, `asset_ledger`, `swiss_tax_contexts` | In use (Drizzle + migrations under `sql/migrations/`) |
-| Tax math server-side (`app/features/tax/services.server.ts`, `tax-dashboard.server.ts`) | Income (marginal slices), demo progressive cantonal wealth tax, ESTV-oriented seeds (`app/db/seeds/tax_rates.json`) |
-| Currency / ledger | CHF Rappen; multi-currency ledger fields with FX toward CHF (see migrations) |
-| Security | RLS reference patterns in `sql/snippets/`; treat production RLS as mandatory before shipping sensitive data |
-| Dashboard UX | Server loaders + actions, Safe-to-Spend dial/hero, skeleton-friendly flows |
-| Scenario simulator | Pillar **3a** contribution vs. marginal rate (estimated tax savings) |
-| Relocation hint | Server-side Zug wealth tax comparison on same asset base (data for UI hints) |
-| E2E | Playwright (`npm run test:e2e`), including tax-guard flows |
+For docs and marketing you can also use:
 
-**Not claimed here** (still roadmap or partial): Supabase Vault-style field encryption, full Phase 3 automation (CSV / b.link mocks, PDF compliance reports), and full official assessment parity — the north-star is accuracy vs. assessments (`PROJECT_PLAN.md`).
+![Swiss Tax Guard — alternate dashboard preview](docs/dashboard-preview.png)
+
+---
+
+## Product thesis
+
+| Pillar | What it means |
+|--------|----------------|
+| **Problem** | Without reliable withholding, people confuse **account balance** with **post-tax disposable liquidity**, which drives year-end cash shocks. |
+| **Approach** | Combine ledger balances with **estimated** federal, cantonal, municipal (and optional church) tax to surface **Safe-to-Spend**. |
+| **North star** | **Safe-to-Spend accuracy** vs. official assessments — target variance under **2%** (see `PROJECT_PLAN.md`). |
+
+**Definition** (`AI.md`):
+
+```text
+Safe-to-Spend = Total Assets − (Estimated Tax Liability + Safety Buffer)
+```
+
+**Precision**: model CHF in **Rappen** (`bigint`, 1 CHF = 100). Format for display in the UI only. Do not use floating-point `number` types for tax or money aggregates.
+
+---
+
+## Architecture
+
+Tax math and persistence run on the **server** (loaders and actions). The browser focuses on presentation and lightweight validation. The canonical tax engine entry point is `app/features/tax/services.server.ts` (`AI.md`).
+
+### System diagram
+
+```mermaid
+flowchart TB
+  subgraph Client["Browser (React 19 + RR7)"]
+    UI["Tax dashboard UI\n`features/tax/components/*`"]
+  end
+
+  subgraph Edge["React Router 7 — Server"]
+    R["Route module\n`features/tax/screens/tax-dashboard.tsx`"]
+    TD["Orchestration\n`tax-dashboard.server.ts`"]
+    SVC["Swiss tax engine\n`services.server.ts`"]
+    Q["Data access\n`queries.server.ts`"]
+    ADP["ESTV seed adapter\n`adapters/estv-json.adapter.ts`"]
+    SEED["`db/seeds/tax_rates.json`"]
+  end
+
+  subgraph Data["Supabase Postgres"]
+    AUTH["Auth (session / JWT)"]
+    PROF["profiles"]
+    CTX["swiss_tax_contexts (RLS)"]
+    LED["asset_ledger (RLS)"]
+  end
+
+  UI -->|loader + action| R
+  R --> TD
+  TD --> SVC
+  TD --> Q
+  SVC --> ADP
+  ADP --> SEED
+  Q -->|Supabase client| PROF
+  Q --> CTX
+  Q --> LED
+  AUTH --> Q
+```
+
+### Dashboard request flow
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant RR as RR7 route (server)
+  participant TD as tax-dashboard.server
+  participant S as services.server
+  participant DB as Supabase Postgres
+
+  U->>RR: GET /dashboard/tax
+  RR->>TD: load dashboard payload
+  TD->>DB: read profile, tax context, ledger balances
+  DB-->>TD: rows
+  TD->>S: compute liability, wealth tax slices, 3a delta
+  S-->>TD: bigint-safe numbers + breakdown
+  TD-->>RR: serializable view model
+  RR-->>U: HTML + hydrated UI
+```
+
+---
 
 ## Stack
 
-- **Framework**: React Router 7 (framework mode)
-- **UI**: Tailwind CSS 4, Radix UI, Lucide
-- **Data**: Supabase (Postgres, Auth), Drizzle ORM
-- **Tax logic location**: `app/features/tax/services.server.ts` (per `AI.md`)
+| Layer | Choice |
+|-------|--------|
+| Framework | React Router 7 (framework mode), React 19 |
+| UI | Tailwind CSS 4, Radix UI, Lucide |
+| Data | Supabase (Postgres, Auth), Drizzle ORM, `sql/migrations/` |
+| Quality | TypeScript, Playwright (`npm run test:e2e`) |
+| Observability / misc | Sentry (when configured), `@react-pdf/renderer` (report paths exist in-repo) |
+
+---
+
+## Repository map (tax feature)
+
+```text
+app/features/tax/
+  services.server.ts        # Liability, marginal slices, Safe-to-Spend core
+  tax-dashboard.server.ts   # Loader orchestration, context sync
+  queries.server.ts         # Supabase reads/writes
+  schema.ts                 # swiss_tax_contexts (includes RLS policies)
+  components/               # Dial, hero, Pillar 3a optimizer, etc.
+  adapters/                 # ESTV-oriented seed JSON adapter
+app/db/seeds/tax_rates.json
+sql/migrations/             # Schema source of truth
+sql/snippets/               # RLS reference snippets
+```
+
+---
+
+## Implemented vs. planned
+
+Aligned with **Phase 1 — High-precision foundation** and parts of **Phase 2 — Nordic UX and simulators** in `PROJECT_PLAN.md`:
+
+| Area | Status |
+|------|--------|
+| Schema: `profiles`, `asset_ledger`, `swiss_tax_contexts` | In use with Drizzle and `sql/migrations/` |
+| Tax engine (server) | Income (marginal slices), demo-style cantonal wealth tax, ESTV-oriented seeds |
+| Dashboard UX | Safe-to-Spend hero and dial, tax breakdown, asset mix, skeleton-friendly flows |
+| Scenarios | Pillar **3a** contribution vs. marginal-rate savings estimate |
+| Insights | Relocation-style hints (for example Zug wealth tax on the same asset base) |
+| E2E | Playwright, including tax-guard flows |
+
+**Still roadmap or partial**: Supabase Vault-style field encryption, full Phase 3 automation (CSV / b.link mocks), complete official assessment parity, and end-to-end compliance PDF reporting.
+
+---
 
 ## Getting started
 
-1. **Prerequisites**: Node.js compatible with the repo, Supabase project, Postgres URL for Drizzle migrations.
-
+1. **Prerequisites**: Node.js compatible with the repo, a Supabase project, and a Postgres URL for Drizzle migrations.
 2. **Environment**: Configure Supabase and database URLs per Supaplate / Supabase docs (local `.env` is gitignored).
-
-3. **Database**: Apply migrations (`sql/migrations/`), run type generation if you use Supabase CLI (`package.json` → `db:typegen` — replace placeholder project id).
-
+3. **Database**: Apply `sql/migrations/`, then run `npm run db:typegen` if you use the Supabase CLI (replace the placeholder project id in `package.json`).
 4. **Seed tax data** (when needed):
 
    ```bash
@@ -62,13 +169,21 @@ Aligned with **Phase 1 — High-precision foundation** and parts of **Phase 2 �
    npm run test:e2e
    ```
 
-**Tax dashboard route**: `/tax` (see `app/routes.ts`).
+**Tax dashboard route**: `/dashboard/tax` — see [`app/routes.ts`](./app/routes.ts) and `features/tax/screens/tax-dashboard.tsx`.
+
+---
+
+## Security and privacy notes
+
+- Production deployments should treat **RLS on all user-owned tables** as mandatory (`sql/snippets/`, Drizzle `pgPolicy` patterns).
+- Prefer **zero-PII logging** for operational logs (`AI.md`).
+
+---
 
 ## Documentation
 
-- **Product & roadmap**: [`PROJECT_PLAN.md`](./PROJECT_PLAN.md)
-- **Base template docs**: [supaplate.com/docs](https://supaplate.com/docs)
+- **Product and roadmap**: [`PROJECT_PLAN.md`](./PROJECT_PLAN.md)
 
 ## License
 
-See [LICENSE.md](./LICENSE.md).
+See [`LICENSE.md`](./LICENSE.md).
