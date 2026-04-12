@@ -4,17 +4,10 @@
 
 > **Turning tax debt into spending confidence** — a real-time tax liability and liquidity dashboard for Swiss residents that separates estimated tax from spendable cash.
 
-This repository extends the [Supaplate](https://supaplate.com/docs) stack (React Router 7, Supabase, Drizzle). Product vision and roadmap live in [`PROJECT_PLAN.md`](./PROJECT_PLAN.md). Swiss domain rules and engineering guardrails live in [`AI.md`](./AI.md).
+This repository extends the [Supaplate](https://supaplate.com/docs) stack (React Router 7, Supabase, Drizzle). Product vision and roadmap live in [`PROJECT_PLAN.md`](./PROJECT_PLAN.md). 
 
 Screenshot source file: [`dashboard_example.png`](./dashboard_example.png) (repository root).
 
----
-
-## Additional dashboard preview
-
-For docs and marketing you can also use:
-
-![Swiss Tax Guard — alternate dashboard preview](docs/dashboard-preview.png)
 
 ---
 
@@ -26,7 +19,6 @@ For docs and marketing you can also use:
 | **Approach** | Combine ledger balances with **estimated** federal, cantonal, municipal (and optional church) tax to surface **Safe-to-Spend**. |
 | **North star** | **Safe-to-Spend accuracy** vs. official assessments — target variance under **2%** (see `PROJECT_PLAN.md`). |
 
-**Definition** (`AI.md`):
 
 ```text
 Safe-to-Spend = Total Assets − (Estimated Tax Liability + Safety Buffer)
@@ -38,7 +30,7 @@ Safe-to-Spend = Total Assets − (Estimated Tax Liability + Safety Buffer)
 
 ## Architecture
 
-Tax math and persistence run on the **server** (loaders and actions). The browser focuses on presentation and lightweight validation. The canonical tax engine entry point is `app/features/tax/services.server.ts` (`AI.md`).
+Tax math and persistence run on the **server** (loaders and actions). The browser focuses on presentation and lightweight validation. The canonical tax engine entry point is `app/features/tax/services.server.ts`
 
 ### System diagram
 
