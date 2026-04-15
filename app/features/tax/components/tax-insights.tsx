@@ -1,5 +1,12 @@
 import type { TaxCategoryBreakdownItem } from "../tax.types";
 import { formatCHF } from "../lib/format-chf";
+import {
+  DashboardCard,
+  DashboardCardBody,
+  DashboardCardDescription,
+  DashboardCardHeader,
+  DashboardCardTitle,
+} from "./dashboard-card";
 
 type Props = {
   items: TaxCategoryBreakdownItem[];
@@ -15,24 +22,24 @@ function getImpactTextClass(taxWeight: number): string {
 
 export default function TaxInsights({ items, taxOptimizationHint }: Props) {
   return (
-    <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold tracking-tight">Tax Category Insights</h2>
-        <p className="text-sm text-muted-foreground">
+    <DashboardCard>
+      <DashboardCardHeader>
+        <DashboardCardTitle>Tax Category Insights</DashboardCardTitle>
+        <DashboardCardDescription>
           Approximate tax-driving share by asset category.
-        </p>
-      </div>
+        </DashboardCardDescription>
+      </DashboardCardHeader>
 
-      {taxOptimizationHint ? (
-        <p
-          className="mt-4 rounded-lg bg-muted/40 px-3 py-2.5 text-sm text-foreground/90"
-          data-testid="tax-optimization-hint"
-        >
-          {taxOptimizationHint}
-        </p>
-      ) : null}
+      <DashboardCardBody className="space-y-4">
+        {taxOptimizationHint ? (
+          <p
+            className="rounded-lg bg-muted/40 px-3 py-2.5 text-sm text-foreground/90"
+            data-testid="tax-optimization-hint"
+          >
+            {taxOptimizationHint}
+          </p>
+        ) : null}
 
-      <div className="mt-4 space-y-2">
         <div className="grid grid-cols-[1fr_auto_auto] gap-3 px-3 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/90">
           <span>Asset Category</span>
           <span className="text-right">Current Value</span>
@@ -56,7 +63,7 @@ export default function TaxInsights({ items, taxOptimizationHint }: Props) {
             </span>
           </div>
         ))}
-      </div>
-    </section>
+      </DashboardCardBody>
+    </DashboardCard>
   );
 }

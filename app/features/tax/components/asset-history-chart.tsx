@@ -1,6 +1,14 @@
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 
 import { formatCHF } from "../lib/format-chf";
+import {
+  DashboardCard,
+  DashboardCardBody,
+  DashboardCardDescription,
+  DashboardCardHeader,
+  DashboardCardTitle,
+} from "./dashboard-card";
 
 type AssetHistoryPoint = {
   date: string;
@@ -16,6 +24,8 @@ type ChartPoint = {
 type Props = {
   points: AssetHistoryPoint[];
   isPending?: boolean;
+  className?: string;
+  controls?: ReactNode;
 };
 
 function formatDateLabel(date: string): string {
@@ -41,7 +51,12 @@ function buildXAxisLabelIndices(pointCount: number): number[] {
   return [...indices].sort((a, b) => a - b);
 }
 
-export default function AssetHistoryChart({ points, isPending = false }: Props) {
+export default function AssetHistoryChart({
+  points,
+  isPending = false,
+  className,
+  controls,
+}: Props) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   const chartPoints = useMemo<ChartPoint[]>(
@@ -99,20 +114,22 @@ export default function AssetHistoryChart({ points, isPending = false }: Props) 
   const xAxisLabelIndices = buildXAxisLabelIndices(coords.length);
 
   return (
-    <section
-      className="rounded-xl border border-border bg-card p-6 shadow-sm"
-      data-testid="asset-history-chart"
-    >
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold tracking-tight">Net Worth Trend</h2>
-        <p className="text-sm text-muted-foreground">
-          Daily cumulative balance from immutable ledger activity.
-        </p>
-      </div>
+    <DashboardCard className={`flex flex-col ${className ?? ""}`} data-testid="asset-history-chart">
+      <DashboardCardHeader>
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <DashboardCardTitle>Net Worth Trend</DashboardCardTitle>
+            <DashboardCardDescription>
+              Daily cumulative balance from immutable ledger activity.
+            </DashboardCardDescription>
+          </div>
+          {controls ? <div className="shrink-0 pt-0.5">{controls}</div> : null}
+        </div>
+      </DashboardCardHeader>
 
-      <div
-        className="relative mt-5 w-full overflow-hidden rounded-lg border border-border/60 bg-background/60"
-        style={{ aspectRatio: "21 / 9" }}
+      <DashboardCardBody
+        className="relative w-full overflow-hidden rounded-lg border border-border/60 bg-background/60"
+        style={{ aspectRatio: "3 / 1" }}
         onMouseLeave={() => setHoveredIndex(null)}
       >
         {coords.length === 0 ? (
@@ -207,7 +224,7 @@ export default function AssetHistoryChart({ points, isPending = false }: Props) 
             ) : null}
           </>
         )}
-      </div>
-    </section>
+      </DashboardCardBody>
+    </DashboardCard>
   );
 }

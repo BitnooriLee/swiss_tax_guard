@@ -25,6 +25,7 @@ type LedgerCurrency = "CHF" | "EUR" | "USD" | "GBP";
 
 type Props = {
   currentBalances: CurrentBalances;
+  triggerClassName?: string;
 };
 
 const ACTION_COPY: Record<ActionType, { label: string; tone: string }> = {
@@ -87,7 +88,7 @@ function estimatedChfRappenPreview(
   return BigInt(Math.round(Number(signedOriginalMinor) * fx));
 }
 
-export default function AssetActionSheet({ currentBalances }: Props) {
+export default function AssetActionSheet({ currentBalances, triggerClassName }: Props) {
   const submitFetcher = useFetcher();
   const fxFetcher = useFetcher<FxRatePayload>();
   const [open, setOpen] = useState(false);
@@ -175,7 +176,11 @@ export default function AssetActionSheet({ currentBalances }: Props) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" data-testid="asset-action-trigger">
+        <Button
+          variant="default"
+          className={triggerClassName}
+          data-testid="asset-action-trigger"
+        >
           Record Transaction
         </Button>
       </SheetTrigger>

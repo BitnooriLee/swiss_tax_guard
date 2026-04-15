@@ -1,12 +1,33 @@
 # Swiss Tax Guard (STG)
 
-![Swiss Tax Guard — command center dashboard](dashboard_example.png)
+![Swiss Tax Guard — command center dashboard]
 
 > **Turning tax debt into spending confidence** — a real-time tax liability and liquidity dashboard for Swiss residents that separates estimated tax from spendable cash.
 
 This repository extends the [Supaplate](https://supaplate.com/docs) stack (React Router 7, Supabase, Drizzle). Product vision and roadmap live in [`PROJECT_PLAN.md`](./PROJECT_PLAN.md). 
 
-Screenshot source file: [`dashboard_example.png`](./dashboard_example.png) (repository root).
+
+## UI examples
+
+<figure>
+  <img src="./images/dashboard_main_image.png" alt="Dashboard main view" width="960" />
+  <figcaption>Main tax dashboard command center with Safe-to-Spend, trend, allocation, and action cards.</figcaption>
+</figure>
+
+<figure>
+  <img src="./images/pillar%203a%20detail.png" alt="Pillar 3a optimizer detail" width="960" />
+  <figcaption>Pillar 3a optimizer detail showing contribution simulation and estimated tax savings.</figcaption>
+</figure>
+
+<figure>
+  <img src="./images/zug%20tax.png" alt="Zug tax comparison" width="960" />
+  <figcaption>Canton-specific tax view example for Zug (ZG), including comparative insights.</figcaption>
+</figure>
+
+<figure>
+  <img src="./images/zurich%20tax.png" alt="Zurich tax comparison" width="960" />
+  <figcaption>Canton-specific tax view example for Zurich (ZH) for side-by-side scenario review.</figcaption>
+</figure>
 
 
 ---
@@ -127,12 +148,24 @@ Aligned with **Phase 1 — High-precision foundation** and parts of **Phase 2 �
 |------|--------|
 | Schema: `profiles`, `asset_ledger`, `swiss_tax_contexts` | In use with Drizzle and `sql/migrations/` |
 | Tax engine (server) | Income (marginal slices), demo-style cantonal wealth tax, ESTV-oriented seeds |
-| Dashboard UX | Safe-to-Spend hero and dial, tax breakdown, asset mix, skeleton-friendly flows |
+| Dashboard UX | Safe-to-Spend hero and dial, tax breakdown, asset mix, skeleton-friendly flows (see **Tax dashboard UI** below) |
 | Scenarios | Pillar **3a** contribution vs. marginal-rate savings estimate |
 | Insights | Relocation-style hints (for example Zug wealth tax on the same asset base) |
 | E2E | Playwright, including tax-guard flows |
 
 **Still roadmap or partial**: Supabase Vault-style field encryption, full Phase 3 automation (CSV / b.link mocks), complete official assessment parity, and end-to-end compliance PDF reporting.
+
+### Tax dashboard UI
+
+The tax command center (`app/features/tax/screens/tax-dashboard.tsx` and `app/features/tax/components/*`) uses a small set of reusable card primitives (`app/features/tax/components/dashboard-card.tsx`) so surface, padding, and header rhythm stay consistent.
+
+**Layout**
+
+- **Hero row**: Safe-to-Spend hero (wide) and Quick Actions (narrow), with extra vertical space before the tax stack so Quick Actions does not crowd the cards below.
+- **Middle band (large screens)**: Two columns share one row height. **Left**: Net Worth Trend (shorter chart, `3 / 1` aspect ratio) with the **7d / 30d / 90d** range control inside the card header, then **Asset Allocation** with a small fixed gap from the chart (no overlap). **Right**: Tax Category Insights and **Estimated income tax** with wider spacing between them; bottoms align with **Asset Allocation** and the tax summary card.
+- **Below**: Pillar 3a collapsible and Safe-to-Spend dial on the same row pattern as before.
+
+**Why not a single `gap-y` on the whole grid?** A uniform row gap also squeezes the right-hand stack (Quick Actions, insights, summary). The middle band is therefore a dedicated two-column block with its own vertical rhythm.
 
 ---
 
@@ -168,7 +201,7 @@ Aligned with **Phase 1 — High-precision foundation** and parts of **Phase 2 �
 ## Security and privacy notes
 
 - Production deployments should treat **RLS on all user-owned tables** as mandatory (`sql/snippets/`, Drizzle `pgPolicy` patterns).
-- Prefer **zero-PII logging** for operational logs (`AI.md`).
+- Prefer **zero-PII logging** for operational logs.
 
 ---
 

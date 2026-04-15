@@ -1,4 +1,5 @@
 import type { SafeToSpendRiskBand } from "../tax.types";
+import { DashboardCard } from "./dashboard-card";
 
 const RISK_ACCENT: Record<SafeToSpendRiskBand, string> = {
   SAFE: "#10b981",
@@ -38,8 +39,8 @@ export default function SafeToSpendDial({
   const dash = circumference * (1 - ratio);
 
   return (
-    <section
-      className="flex min-h-[220px] flex-col items-center justify-center rounded-xl border border-border bg-card p-6 shadow-sm"
+    <DashboardCard
+      className="flex min-h-[220px] flex-col items-center justify-center"
       aria-label="Tax debt versus liquid assets"
     >
       <div className="relative size-44">
@@ -89,6 +90,6 @@ export default function SafeToSpendDial({
         Higher share means more of your liquid balance is earmarked for estimated
         income tax plus cantonal wealth tax (demo simulator).
       </p>
-    </section>
+    </DashboardCard>
   );
 }

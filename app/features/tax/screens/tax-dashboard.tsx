@@ -1,6 +1,7 @@
 import type { Route } from "./+types/tax-dashboard";
+import type { ReactNode } from "react";
 
-import { FileDown } from "lucide-react";
+import { ChevronDown, FileDown } from "lucide-react";
 import {
   data,
   redirect,
@@ -10,6 +11,11 @@ import {
 } from "react-router";
 
 import { Button } from "~/core/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "~/core/components/ui/collapsible";
 import { getSessionUser } from "~/core/lib/guards.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 import { getAssetHistory } from "~/features/assets/queries.server";
@@ -19,6 +25,13 @@ import AssetHistoryChart from "../components/asset-history-chart";
 import SafeToSpendDial from "../components/safe-to-spend-dial";
 import SafeToSpendHero from "../components/safe-to-spend-hero";
 import AssetActionSheet from "../components/asset-action-sheet";
+import {
+  DashboardCard,
+  DashboardCardBody,
+  DashboardCardDescription,
+  DashboardCardHeader,
+  DashboardCardTitle,
+} from "../components/dashboard-card";
 import Pillar3aOptimizer from "../components/pillar-3a-optimizer";
 import TaxInsights from "../components/tax-insights";
 import TaxSummaryCard from "../components/tax-summary-card";
@@ -317,8 +330,10 @@ function buildArcPath(
 
 function AssetDistributionPie({
   currentBalances,
+  className,
 }: {
   currentBalances: TaxDashboardCalculation["currentBalances"];
+  className?: string;
 }) {
   const rawSegments = [
     { label: "Cash", valueRappen: currentBalances.CASH, color: "#10b981", dot: "bg-emerald-500" },
@@ -358,14 +373,23 @@ function AssetDistributionPie({
   }
 
   return (
-    <section className="rounded-xl border border-[#E5E7EB] bg-white p-5 shadow-sm dark:border-border dark:bg-card">
-      <h2 className="mb-4 text-sm font-semibold tracking-tight text-slate-700 dark:text-foreground">
-        Asset Allocation
-      </h2>
+    <DashboardCard
+      className={`border-[#E5E7EB] bg-white dark:border-border dark:bg-card ${className ?? ""}`}
+    >
+      <DashboardCardHeader>
+        <DashboardCardTitle className="text-slate-800 dark:text-foreground">
+          Asset Allocation
+        </DashboardCardTitle>
+        <DashboardCardDescription>
+          Current portfolio mix by liquid asset category.
+        </DashboardCardDescription>
+      </DashboardCardHeader>
       {totalRappen === 0n ? (
-        <p className="text-sm text-muted-foreground">No assets recorded yet.</p>
+        <DashboardCardBody>
+          <p className="text-sm text-muted-foreground">No assets recorded yet.</p>
+        </DashboardCardBody>
       ) : (
-        <div className="flex items-center gap-6">
+        <DashboardCardBody className="flex items-center gap-6">
           <svg viewBox="0 0 100 100" className="h-28 w-28 shrink-0" aria-hidden>
             {arcs.map((arc) => (
               <path key={arc.label} d={arc.path} fill={arc.color} />
@@ -382,9 +406,9 @@ function AssetDistributionPie({
               </li>
             ))}
           </ul>
-        </div>
+        </DashboardCardBody>
       )}
-    </section>
+    </DashboardCard>
   );
 }
 
@@ -394,33 +418,79 @@ function AssetDistributionPie({
 function QuickActionsCard({
   currentBalances,
   selectedCanton,
+  recentLedger,
 }: {
   currentBalances: TaxDashboardCalculation["currentBalances"];
   selectedCanton: string;
+  recentLedger: RecentLedgerEntry[];
 }) {
   return (
-    <section className="rounded-xl border border-[#E5E7EB] bg-white p-5 shadow-sm dark:border-border dark:bg-card">
-      <h2 className="mb-4 text-sm font-semibold tracking-tight text-slate-700 dark:text-foreground">
-        Quick Actions
-      </h2>
-      <div className="flex flex-col gap-2.5">
-        <AssetActionSheet currentBalances={currentBalances} />
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full justify-start gap-2 text-xs"
-          asChild
-        >
-          <a href="/api/export-pdf" download>
-            <FileDown className="size-3.5" aria-hidden />
-            Export PDF Statement
-          </a>
-        </Button>
-      </div>
-      <div className="mt-4 border-t border-border pt-4">
-        <ResidenceCantonSelect selectedCanton={selectedCanton} />
-      </div>
-    </section>
+    <DashboardCard className="min-h-[220px] border-[#E5E7EB] bg-white dark:border-border dark:bg-card">
+      <DashboardCardHeader>
+        <DashboardCardTitle className="text-slate-800 dark:text-foreground">
+          Quick Actions
+        </DashboardCardTitle>
+        <DashboardCardDescription>
+          Manage assets, export reports, and update your tax location.
+        </DashboardCardDescription>
+      </DashboardCardHeader>
+      <DashboardCardBody className="flex flex-col gap-3">
+        <ResidenceCantonSelect
+          selectedCanton={selectedCanton}
+          exportAction={
+            <Button
+              variant="outline"
+              className="h-9 shrink-0 px-3 text-[11px] sm:h-10 sm:text-xs"
+              asChild
+            >
+              <a href="/api/export-pdf" download>
+                <FileDown className="size-3.5" aria-hidden />
+                Export PDF
+              </a>
+            </Button>
+          }
+        />
+        <AssetActionSheet
+          currentBalances={currentBalances}
+          triggerClassName="h-11 w-full bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+        />
+        <div>
+          <h3 className="mb-2 text-xs font-semibold tracking-tight text-slate-700 dark:text-foreground">
+            Recent Entries
+          </h3>
+          {recentLedger.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No ledger entries yet.</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {recentLedger.slice(0, 3).map((entry) => {
+                const amount = BigInt(entry.amountRappenStr);
+                const isInflow = amount >= 0n;
+                const absAmount = isInflow ? amount : -amount;
+                return (
+                  <li
+                    key={entry.id}
+                    className="flex flex-col gap-0.5 text-xs sm:flex-row sm:items-center sm:justify-between sm:gap-2"
+                  >
+                    <span className="min-w-0 truncate text-[11px] text-slate-700 dark:text-foreground sm:text-xs">
+                      {ASSET_EMOJI[entry.assetType] ?? "📦"}{" "}
+                      {entry.description ??
+                        `${entry.assetType} ${entry.actionType.toLowerCase()}`}
+                    </span>
+                    <span
+                      className={`shrink-0 text-[11px] font-semibold tabular-nums sm:text-xs ${
+                        isInflow ? "text-emerald-600" : "text-red-500"
+                      }`}
+                    >
+                      {isInflow ? "+" : "−"}CHF {formatCHF(absAmount)}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </DashboardCardBody>
+    </DashboardCard>
   );
 }
 
@@ -433,58 +503,51 @@ const ASSET_EMOJI: Record<string, string> = {
   stock: "📈",
 };
 
-function formatEntryDate(iso: string): string {
-  if (!iso) return "";
-  return new Date(iso).toLocaleDateString("de-CH", {
-    day: "2-digit",
-    month: "short",
-  });
-}
-
-function RecentTransactionsCard({ entries }: { entries: RecentLedgerEntry[] }) {
+function Pillar3aCollapsibleCard({
+  marginalRateBps,
+  taxYear,
+  savedContributionRappen,
+}: {
+  marginalRateBps: number;
+  taxYear: number;
+  savedContributionRappen: bigint;
+}) {
   return (
-    <section className="rounded-xl border border-[#E5E7EB] bg-white p-5 shadow-sm dark:border-border dark:bg-card">
-      <h2 className="mb-3 text-sm font-semibold tracking-tight text-slate-700 dark:text-foreground">
-        Recent Entries
-      </h2>
-      {entries.length === 0 ? (
-        <p className="text-xs text-muted-foreground">No ledger entries yet.</p>
-      ) : (
-        <ul className="flex flex-col divide-y divide-border/60">
-          {entries.map((entry) => {
-            const amount = BigInt(entry.amountRappenStr);
-            const isInflow = amount >= 0n;
-            const absAmount = isInflow ? amount : -amount;
-            return (
-              <li
-                key={entry.id}
-                className="flex items-center justify-between gap-2 py-2.5 text-xs"
-              >
-                <div className="flex min-w-0 items-center gap-2">
-                  <span className="shrink-0 text-base leading-none">
-                    {ASSET_EMOJI[entry.assetType] ?? "📦"}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate font-medium capitalize text-slate-800 dark:text-foreground">
-                      {entry.description ??
-                        `${entry.assetType} ${entry.actionType.toLowerCase()}`}
-                    </p>
-                    <p className="text-muted-foreground">{formatEntryDate(entry.createdAt)}</p>
-                  </div>
-                </div>
-                <span
-                  className={`shrink-0 font-semibold tabular-nums ${
-                    isInflow ? "text-emerald-600" : "text-red-500"
-                  }`}
-                >
-                  {isInflow ? "+" : "−"}CHF {formatCHF(absAmount)}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </section>
+    <DashboardCard className="p-0">
+      <Collapsible defaultOpen={false}>
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="group flex w-full items-center justify-between gap-3 px-6 py-4 text-left"
+            data-testid="pillar-3a-collapsible-trigger"
+          >
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight text-slate-800 dark:text-foreground">
+                Pillar 3a tax optimizer
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Optional simulation to reduce estimated tax reserve.
+              </p>
+            </div>
+            <ChevronDown
+              className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180"
+              aria-hidden
+            />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="border-t border-border">
+          <div className="p-6">
+            <Pillar3aOptimizer
+              key={`${taxYear}-${savedContributionRappen.toString()}`}
+              marginalRateBps={marginalRateBps}
+              taxYear={taxYear}
+              savedContributionRappen={savedContributionRappen}
+              embedded
+            />
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    </DashboardCard>
   );
 }
 
@@ -526,58 +589,80 @@ function TaxDashboardBody({
   );
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* Command Center Grid */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-        {/* ── Column A: Financial Core (4/12) ── */}
-        <div className="flex flex-col gap-5 lg:col-span-4">
-          <SafeToSpendHero
-            safeToSpendRappen={safeToSpend.safeToSpendRappen}
-            riskBand={safeToSpend.riskBand}
-            estimatedTaxDebtRappen={safeToSpend.estimatedTaxDebtRappen}
-          />
-          <SafeToSpendDial
-            estimatedTaxDebtRappen={safeToSpend.estimatedTaxDebtRappen}
-            totalLiquidAssetsRappen={safeToSpend.totalLiquidAssetsRappen}
-            riskBand={safeToSpend.riskBand}
-          />
-          <TaxSummaryCard
-            federalRappen={taxSummary.federalRappen}
-            cantonalRappen={taxSummary.cantonalRappen}
-            municipalRappen={taxSummary.municipalRappen}
-            taxYear={taxYear}
-            canton={canton}
-          />
-          <Pillar3aOptimizer
-            key={`${taxYear}-${pillar3aContributionRappen.toString()}`}
-            marginalRateBps={marginalTaxRateBps}
-            taxYear={taxYear}
-            savedContributionRappen={pillar3aContributionRappen}
-          />
+    <div className="flex flex-col gap-6">
+      {/* Split rows so vertical rhythm is independent: only Trend→Allocation is tight. */}
+      <div className="flex flex-col">
+        {/* Row 1 — extra space below Quick Actions before tax stack */}
+        <div className="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-x-4">
+          <div className="lg:col-span-8">
+            <SafeToSpendHero
+              safeToSpendRappen={safeToSpend.safeToSpendRappen}
+              riskBand={safeToSpend.riskBand}
+              estimatedTaxDebtRappen={safeToSpend.estimatedTaxDebtRappen}
+            />
+          </div>
+          <div className="lg:col-span-4">
+            <QuickActionsCard
+              currentBalances={currentBalances}
+              selectedCanton={selectedCanton}
+              recentLedger={recentLedger}
+            />
+          </div>
         </div>
 
-        {/* ── Column B: Growth & Allocation (5/12) ── */}
-        <div className="flex flex-col gap-5 lg:col-span-5">
-          <section>
-            <div className="mb-3 flex items-center justify-end">
-              <TimeRangePicker selectedDays={selectedHistoryDays} />
+        {/*
+          Middle band: two columns share one row height on lg.
+          Left: shorter Net Worth Trend, tight gap-3, Asset Allocation flush toward tax summary baseline.
+          Right: wider vertical rhythm between Insights and Estimated income tax; bottoms align.
+        */}
+        <div className="mb-6 grid grid-cols-1 items-stretch gap-8 lg:grid-cols-12 lg:gap-x-4 lg:gap-y-0">
+          <div className="flex min-h-0 flex-col gap-3 lg:col-span-8 lg:h-full">
+            <section className="shrink-0">
+              <AssetHistoryChart
+                points={assetHistory}
+                isPending={isRangePending}
+                className="shrink-0"
+                controls={<TimeRangePicker selectedDays={selectedHistoryDays} />}
+              />
+            </section>
+            <div className="flex min-h-0 flex-col justify-end lg:flex-1">
+              <AssetDistributionPie
+                currentBalances={currentBalances}
+                className="min-h-0 w-full"
+              />
             </div>
-            <AssetHistoryChart points={assetHistory} isPending={isRangePending} />
-          </section>
-          <AssetDistributionPie currentBalances={currentBalances} />
+          </div>
+          <div className="flex min-h-0 flex-col justify-between gap-10 lg:col-span-4 lg:h-full">
+            <TaxInsights
+              items={taxCategoryBreakdown}
+              taxOptimizationHint={taxOptimizationHint}
+            />
+            <TaxSummaryCard
+              federalRappen={taxSummary.federalRappen}
+              cantonalRappen={taxSummary.cantonalRappen}
+              municipalRappen={taxSummary.municipalRappen}
+              taxYear={taxYear}
+              canton={canton}
+            />
+          </div>
         </div>
 
-        {/* ── Column C: Intelligence & Actions (3/12) ── */}
-        <div className="flex flex-col gap-5 lg:col-span-3">
-          <QuickActionsCard
-            currentBalances={currentBalances}
-            selectedCanton={selectedCanton}
-          />
-          <TaxInsights
-            items={taxCategoryBreakdown}
-            taxOptimizationHint={taxOptimizationHint}
-          />
-          <RecentTransactionsCard entries={recentLedger} />
+        {/* Row 3 */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-x-4">
+          <div className="lg:col-span-8">
+            <Pillar3aCollapsibleCard
+              marginalRateBps={marginalTaxRateBps}
+              taxYear={taxYear}
+              savedContributionRappen={pillar3aContributionRappen}
+            />
+          </div>
+          <div className="lg:col-span-4">
+            <SafeToSpendDial
+              estimatedTaxDebtRappen={safeToSpend.estimatedTaxDebtRappen}
+              totalLiquidAssetsRappen={safeToSpend.totalLiquidAssetsRappen}
+              riskBand={safeToSpend.riskBand}
+            />
+          </div>
         </div>
       </div>
 
@@ -600,13 +685,19 @@ function TaxDashboardBody({
   );
 }
 
-function ResidenceCantonSelect({ selectedCanton }: { selectedCanton: string }) {
+function ResidenceCantonSelect({
+  selectedCanton,
+  exportAction,
+}: {
+  selectedCanton: string;
+  exportAction?: ReactNode;
+}) {
   const fetcher = useFetcher<typeof action>();
 
   return (
     <fetcher.Form
       method="post"
-      className="flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-2"
+      className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
     >
       <input type="hidden" name="intent" value="update-canton" />
       <label
@@ -615,24 +706,27 @@ function ResidenceCantonSelect({ selectedCanton }: { selectedCanton: string }) {
       >
         Location
       </label>
-      <select
-        id="residence-canton"
-        name="canton"
-        key={selectedCanton}
-        defaultValue={selectedCanton}
-        disabled={fetcher.state !== "idle"}
-        data-testid="residence-canton-select"
-        onChange={(event) => {
-          fetcher.submit(event.currentTarget.form);
-        }}
-        className="min-w-[10.5rem] cursor-pointer rounded-md border-0 bg-muted/50 py-1.5 pl-2 pr-8 text-sm text-foreground shadow-none outline-none ring-0 transition-[box-shadow,background-color] focus:bg-muted focus:ring-2 focus:ring-emerald-600/25 focus:ring-offset-0 dark:focus:ring-emerald-500/30"
-      >
-        {RESIDENCE_CANTON_OPTIONS.map(({ code, label }) => (
-          <option key={code} value={code}>
-            {label}
-          </option>
-        ))}
-      </select>
+      <div className="flex flex-1 items-center gap-2">
+        <select
+          id="residence-canton"
+          name="canton"
+          key={selectedCanton}
+          defaultValue={selectedCanton}
+          disabled={fetcher.state !== "idle"}
+          data-testid="residence-canton-select"
+          onChange={(event) => {
+            fetcher.submit(event.currentTarget.form);
+          }}
+          className="h-10 min-w-[8rem] flex-1 cursor-pointer rounded-md border border-border/70 bg-muted/50 py-1.5 pl-2 pr-8 text-sm text-foreground shadow-none outline-none ring-0 transition-[box-shadow,background-color] focus:bg-muted focus:ring-2 focus:ring-emerald-600/25 focus:ring-offset-0 dark:focus:ring-emerald-500/30"
+        >
+          {RESIDENCE_CANTON_OPTIONS.map(({ code, label }) => (
+            <option key={code} value={code}>
+              {label}
+            </option>
+          ))}
+        </select>
+        {exportAction}
+      </div>
       {fetcher.data && !fetcher.data.success ? (
         <p className="mt-1 text-xs text-destructive" data-testid="canton-update-error">
           {(fetcher.data as { success: false; error: string }).error}

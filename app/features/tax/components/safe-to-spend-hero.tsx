@@ -1,6 +1,7 @@
 import type { SafeToSpendRiskBand } from "../tax.types";
 
 import { formatCHF } from "../lib/format-chf";
+import { DashboardCard } from "./dashboard-card";
 
 const RISK_ACCENT: Record<SafeToSpendRiskBand, string> = {
   SAFE: "#10b981",
@@ -28,8 +29,8 @@ export default function SafeToSpendHero({
   const accent = RISK_ACCENT[riskBand];
 
   return (
-    <section
-      className="flex min-h-[220px] flex-col justify-between rounded-xl border border-border bg-card p-6 shadow-sm"
+    <DashboardCard
+      className="flex min-h-[220px] flex-col justify-between"
       aria-labelledby="safe-to-spend-heading"
     >
       <div>
@@ -54,6 +55,6 @@ export default function SafeToSpendHero({
           CHF {formatCHF(estimatedTaxDebtRappen)}
         </p>
       </div>
-    </section>
+    </DashboardCard>
   );
 }

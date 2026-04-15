@@ -18,6 +18,7 @@ type Props = {
   marginalRateBps: number;
   taxYear: number;
   savedContributionRappen: bigint;
+  embedded?: boolean;
 };
 
 const RAPPEN_PER_CHF = 100n;
@@ -26,6 +27,7 @@ export default function Pillar3aOptimizer({
   marginalRateBps,
   taxYear,
   savedContributionRappen,
+  embedded = false,
 }: Props) {
   const fetcher = useFetcher<ActionData>();
   const maxRappen = maxPillar3aEmployeeContributionRappen(taxYear);
@@ -50,7 +52,11 @@ export default function Pillar3aOptimizer({
 
   return (
     <section
-      className="rounded-xl border border-emerald-600/20 bg-gradient-to-b from-emerald-50/40 to-amber-50/30 p-6 shadow-sm dark:border-emerald-500/20 dark:from-emerald-950/20 dark:to-amber-950/10"
+      className={
+        embedded
+          ? "rounded-lg bg-gradient-to-b from-emerald-50/40 to-amber-50/30 p-5 dark:from-emerald-950/20 dark:to-amber-950/10"
+          : "rounded-xl border border-emerald-600/20 bg-gradient-to-b from-emerald-50/40 to-amber-50/30 p-6 shadow-sm dark:border-emerald-500/20 dark:from-emerald-950/20 dark:to-amber-950/10"
+      }
       data-testid="pillar-3a-optimizer"
     >
       <div className="space-y-1">
