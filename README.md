@@ -1,8 +1,27 @@
 # Swiss Tax Guard (STG)
 
-![Swiss Tax Guard — command center dashboard]
+[Swiss Tax Guard — command center dashboard]
 
 > **Turning tax debt into spending confidence** — a real-time tax liability and liquidity dashboard for Swiss residents that separates estimated tax from spendable cash.
+
+---
+
+## Product thesis
+
+| Pillar | What it means |
+|--------|----------------|
+| **Problem** | Without reliable withholding, people confuse **account balance** with **post-tax disposable liquidity**, which drives year-end cash shocks. |
+| **Approach** | Combine ledger balances with **estimated** federal, cantonal, municipal (and optional church) tax to surface **Safe-to-Spend**. |
+| **North star** | **Safe-to-Spend accuracy** vs. official assessments — target variance under **2%** (see `PROJECT_PLAN.md`). |
+
+
+```text
+Safe-to-Spend = Total Assets − (Estimated Tax Liability + Safety Buffer)
+```
+
+**Precision**: model CHF in **Rappen** (`bigint`, 1 CHF = 100). Format for display in the UI only. Do not use floating-point `number` types for tax or money aggregates.
+
+---
 
 ## UI examples
 
@@ -26,23 +45,6 @@
   <img src="./images/zurich%20tax.png" alt="Zurich tax comparison" width="960" />
 </figure>
 
-
----
-
-## Product thesis
-
-| Pillar | What it means |
-|--------|----------------|
-| **Problem** | Without reliable withholding, people confuse **account balance** with **post-tax disposable liquidity**, which drives year-end cash shocks. |
-| **Approach** | Combine ledger balances with **estimated** federal, cantonal, municipal (and optional church) tax to surface **Safe-to-Spend**. |
-| **North star** | **Safe-to-Spend accuracy** vs. official assessments — target variance under **2%** (see `PROJECT_PLAN.md`). |
-
-
-```text
-Safe-to-Spend = Total Assets − (Estimated Tax Liability + Safety Buffer)
-```
-
-**Precision**: model CHF in **Rappen** (`bigint`, 1 CHF = 100). Format for display in the UI only. Do not use floating-point `number` types for tax or money aggregates.
 
 ---
 
