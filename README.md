@@ -10,23 +10,23 @@ This repository extends the [Supaplate](https://supaplate.com/docs) stack (React
 ## UI examples
 
 <figure>
-  <img src="./images/dashboard_main_image.png" alt="Dashboard main view" width="960" />
   <figcaption>Main tax dashboard command center with Safe-to-Spend, trend, allocation, and action cards.</figcaption>
+  <img src="./images/dashboard_main_image.png" alt="Dashboard main view" width="960" />
 </figure>
 
 <figure>
-  <img src="./images/pillar%203a%20detail.png" alt="Pillar 3a optimizer detail" width="960" />
   <figcaption>Pillar 3a optimizer detail showing contribution simulation and estimated tax savings.</figcaption>
+  <img src="./images/pillar%203a%20detail.png" alt="Pillar 3a optimizer detail" width="960" />
 </figure>
 
 <figure>
-  <img src="./images/zug%20tax.png" alt="Zug tax comparison" width="960" />
   <figcaption>Canton-specific tax view example for Zug (ZG), including comparative insights.</figcaption>
+  <img src="./images/zug%20tax.png" alt="Zug tax comparison" width="960" />
 </figure>
 
 <figure>
-  <img src="./images/zurich%20tax.png" alt="Zurich tax comparison" width="960" />
   <figcaption>Canton-specific tax view example for Zurich (ZH) for side-by-side scenario review.</figcaption>
+  <img src="./images/zurich%20tax.png" alt="Zurich tax comparison" width="960" />
 </figure>
 
 
