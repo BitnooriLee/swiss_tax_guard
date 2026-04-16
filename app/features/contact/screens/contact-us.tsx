@@ -29,7 +29,7 @@ import FormErrors from "~/core/components/form-error";
 import { Input } from "~/core/components/ui/input";
 import { Label } from "~/core/components/ui/label";
 import { Textarea } from "~/core/components/ui/textarea";
-import resendClient from "~/core/lib/resend-client.server";
+import { getResendClient } from "~/core/lib/resend-client.server";
 
 /**
  * Meta function for setting page metadata
@@ -213,7 +213,7 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   // Send email to admin with contact information
-  const { error } = await resendClient.emails.send({
+  const { error } = await getResendClient().emails.send({
     from: "Supaplate <hello@supaplate.com>",
     to: [process.env.ADMIN_EMAIL!],
     subject: "New contact from Supaplate",

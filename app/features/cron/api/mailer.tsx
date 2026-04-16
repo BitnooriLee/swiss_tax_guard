@@ -20,7 +20,7 @@ import * as Sentry from "@sentry/node";
 import { data } from "react-router";
 import WelcomeEmail from "transactional-emails/emails/welcome";
 
-import resendClient from "~/core/lib/resend-client.server";
+import { getResendClient } from "~/core/lib/resend-client.server";
 import { getAdminClient } from "~/core/lib/supa-admin-client.server";
 
 /**
@@ -91,7 +91,7 @@ export async function action({ request }: Route.LoaderArgs) {
     // Process different email templates
     if (template === "welcome") {
       // Send welcome email using the Resend client
-      const { error } = await resendClient.emails.send({
+      const { error } = await getResendClient().emails.send({
         // Make sure this domain is the Resend domain.
         from: "Supaplate <hello@supaplate.com>",
         to: [to],
