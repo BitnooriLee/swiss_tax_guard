@@ -4,7 +4,7 @@
   "type": "module",
   "version": "1.0",
   "scripts": {
-    "prebuild": "npm run typecheck && npm run db:typegen",
+    "prebuild": "npm run db:typegen && npm run typecheck",
     "build": "react-router build",
     "dev": "NODE_OPTIONS='--import ./instrument.server.mjs' react-router dev",
     "start": "react-router-serve ./build/server/index.js",
@@ -12,7 +12,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed-tax": "npx tsx ./app/db/seed-tax.ts",
-    "db:typegen": "supabase gen types typescript --project-id <project-id> > database.types.ts",
+    "db:typegen": "sh -c 'tmp=$(mktemp); if [ -n \"$SUPABASE_PROJECT_ID\" ]; then supabase gen types typescript --project-id \"$SUPABASE_PROJECT_ID\" > \"$tmp\" || { rm -f \"$tmp\"; exit 1; }; elif supabase gen types typescript --linked > \"$tmp\"; then :; else echo \"Skipping db:typegen: set SUPABASE_PROJECT_ID or run supabase link\" >&2; rm -f \"$tmp\"; exit 0; fi; mv \"$tmp\" database.types.ts'",
     "test:e2e": "npx playwright test",
     "test:e2e:ui": "npx playwright test --ui",
     "format": "prettier --write \"app/**/*.{ts,tsx,js,jsx,json,css,md,mdx}\""
