@@ -18,7 +18,7 @@ import type { Route } from "./+types/delete-account";
 import { data, redirect } from "react-router";
 
 import { requireAuthentication, requireMethod } from "~/core/lib/guards.server";
-import adminClient from "~/core/lib/supa-admin-client.server";
+import { getAdminClient } from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 /**
@@ -45,6 +45,8 @@ import makeServerClient from "~/core/lib/supa-client.server";
  * @returns Redirect to home page or error response
  */
 export async function action({ request }: Route.ActionArgs) {
+  const adminClient = getAdminClient();
+
   // Validate request method (only allow DELETE)
   requireMethod("DELETE")(request);
 

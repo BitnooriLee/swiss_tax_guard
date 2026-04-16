@@ -21,7 +21,7 @@ import { data } from "react-router";
 import WelcomeEmail from "transactional-emails/emails/welcome";
 
 import resendClient from "~/core/lib/resend-client.server";
-import adminClient from "~/core/lib/supa-admin-client.server";
+import { getAdminClient } from "~/core/lib/supa-admin-client.server";
 
 /**
  * Interface representing an email message in the queue
@@ -56,6 +56,8 @@ interface EmailMessage {
  * @returns A response with appropriate status code (200 for success, 401 for unauthorized)
  */
 export async function action({ request }: Route.LoaderArgs) {
+  const adminClient = getAdminClient();
+
   // Security check: Verify this is a POST request with the correct secret
   if (
     request.method !== "POST" ||
@@ -67,9 +69,7 @@ export async function action({ request }: Route.LoaderArgs) {
   // Pop a message from the Postgres message queue (PGMQ)
   // Note: Using admin client is necessary to access the queue
   const { data: message, error } = await adminClient
-    // @ts-expect-error - PGMQ types are not fully defined in the Supabase client
     .schema("pgmq_public")
-    // @ts-expect-error - PGMQ types are not fully defined in the Supabase client
     .rpc("pop", {
       queue_name: "mailer", // Queue name in Postgres
     });

@@ -1,7 +1,7 @@
 /**
  * Supabase Admin Client Module
  *
- * This module creates and exports a Supabase client with admin privileges using the service role key.
+ * This module creates a Supabase client with admin privileges using the service role key.
  * The admin client has elevated permissions and can bypass Row Level Security (RLS) policies,
  * allowing it to perform administrative operations that regular user clients cannot.
  *
@@ -15,24 +15,36 @@
  * - Background jobs and scheduled tasks
  * - Server-side operations that need elevated permissions
  */
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "database.types";
 
 import { createClient } from "@supabase/supabase-js";
 
-/**
- * Supabase admin client with service role privileges
- * 
- * This client uses the SUPABASE_SERVICE_ROLE_KEY which gives it admin privileges,
- * allowing it to bypass Row Level Security (RLS) policies and perform administrative
- * operations on the database.
- * 
- * IMPORTANT: This client should only be used in server-side code and for operations
- * that specifically require admin privileges. For regular operations, use the
- * makeServerClient function instead.
- */
-const adminClient = createClient<Database>(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+let cachedAdminClient: SupabaseClient<Database> | null = null;
 
-export default adminClient;
+function readRequiredEnv(
+  name: "SUPABASE_URL" | "SUPABASE_SERVICE_ROLE_KEY",
+): string {
+  const value = process.env[name];
+  if (!value || value.trim() === "") {
+    throw new Error(`${name} is required.`);
+  }
+  return value;
+}
+
+/**
+ * Returns a singleton Supabase admin client. Lazily created so importing this module
+ * does not throw during build-time prerender when env vars are absent.
+ */
+export function getAdminClient(): SupabaseClient<Database> {
+  if (cachedAdminClient) {
+    return cachedAdminClient;
+  }
+
+  cachedAdminClient = createClient<Database>(
+    readRequiredEnv("SUPABASE_URL"),
+    readRequiredEnv("SUPABASE_SERVICE_ROLE_KEY"),
+  );
+
+  return cachedAdminClient;
+}

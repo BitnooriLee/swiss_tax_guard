@@ -26,7 +26,7 @@ import {
 } from "e2e/utils/test-helpers";
 
 import db from "~/core/db/drizzle-client.server";
-import adminClient from "~/core/lib/supa-admin-client.server";
+import { getAdminClient } from "~/core/lib/supa-admin-client.server";
 import { profiles } from "~/features/users/schema";
 
 /**
@@ -78,6 +78,7 @@ test.describe("Edit Profile", () => {
    * The avatar is explicitly removed from Supabase storage to prevent orphaned files.
    */
   test.afterAll(async () => {
+    const adminClient = getAdminClient();
     await deleteUser(TEST_EMAIL);
     await adminClient.storage.from("avatars").remove([userId]);
   });

@@ -20,7 +20,7 @@ import { redirect } from "react-router";
 import { z } from "zod";
 
 import { requireAuthentication } from "~/core/lib/guards.server";
-import adminClient from "~/core/lib/supa-admin-client.server";
+import { getAdminClient } from "~/core/lib/supa-admin-client.server";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 /**
@@ -100,6 +100,8 @@ const paymentResponseSchema = z.object({
  * @returns Object with payment data for the success page
  */
 export async function loader({ request }: Route.LoaderArgs) {
+  const adminClient = getAdminClient();
+
   // Create a server-side Supabase client with the user's session
   const [client] = makeServerClient(request);
   
