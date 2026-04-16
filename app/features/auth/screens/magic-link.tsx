@@ -28,7 +28,7 @@ import {
 } from "~/core/components/ui/card";
 import { Input } from "~/core/components/ui/input";
 import { Label } from "~/core/components/ui/label";
-import { getPublicOrigin } from "~/core/lib/public-url.server";
+import { getPublicOrigin } from "~/core/lib/public-url";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 /**
@@ -86,12 +86,16 @@ export async function action({ request }: Route.ActionArgs) {
   // Create Supabase client
   const [client] = makeServerClient(request);
 
+  const emailRedirectTo = `${getPublicOrigin(request)}/`;
+
   // Request magic link email from Supabase
   const { error } = await client.auth.signInWithOtp({
     email: validData.email,
     options: {
       // Only allow existing users to sign in with magic link
       shouldCreateUser: false,
+      // Must match Supabase "Redirect URLs" and the host the user actually uses (not localhost on prod).
+      emailRedirectTo,
     },
   });
 
