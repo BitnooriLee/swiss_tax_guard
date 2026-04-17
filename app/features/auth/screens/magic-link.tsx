@@ -86,7 +86,9 @@ export async function action({ request }: Route.ActionArgs) {
   // Create Supabase client
   const [client] = makeServerClient(request);
 
-  const emailRedirectTo = `${getPublicOrigin(request)}/`;
+  // Use a real path segment so Supabase redirect globs like `https://host/*` match
+  // (root `https://host/` is easy to misconfigure vs `/**`).
+  const emailRedirectTo = `${getPublicOrigin(request)}/auth/callback`;
 
   // Request magic link email from Supabase
   const { error } = await client.auth.signInWithOtp({
@@ -105,6 +107,20 @@ export async function action({ request }: Route.ActionArgs) {
     if (error.code === "otp_disabled") {
       return data(
         { error: "Create an account before signing in." },
+        { status: 400 },
+      );
+    }
+    if (
+      typeof error.message === "string" &&
+      error.message.toLowerCase().includes("requested path is invalid")
+    ) {
+      return data(
+        {
+          error:
+            "Supabase rejected the redirect URL. In Dashboard → Authentication → URL Configuration → Redirect URLs, add: " +
+            `${getPublicOrigin(request)}/auth/callback` +
+            " (or a wildcard such as https://your-domain.com/** for previews).",
+        },
         { status: 400 },
       );
     }

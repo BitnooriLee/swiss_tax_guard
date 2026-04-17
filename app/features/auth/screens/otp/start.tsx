@@ -83,7 +83,7 @@ export async function action({ request }: Route.ActionArgs) {
   // Create Supabase client
   const [client] = makeServerClient(request);
 
-  const emailRedirectTo = `${getPublicOrigin(request)}/`;
+  const emailRedirectTo = `${getPublicOrigin(request)}/auth/callback`;
 
   // Request OTP email from Supabase
   const { error } = await client.auth.signInWithOtp({

@@ -47,6 +47,7 @@ export default [
 
   layout("core/layouts/navigation.layout.tsx", [
     route("/auth/confirm", "features/auth/screens/confirm.tsx"),
+    route("/auth/callback", "features/auth/screens/auth-callback.tsx"),
     index("features/home/screens/home.tsx"),
     route("/error", "core/screens/error.tsx"),
     layout("core/layouts/public.layout.tsx", [

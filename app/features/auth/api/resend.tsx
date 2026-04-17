@@ -19,6 +19,7 @@ import type { Route } from "./+types/resend";
 import { data } from "react-router";
 import { z } from "zod";
 
+import { getPublicOrigin } from "~/core/lib/public-url";
 import makeServerClient from "~/core/lib/supa-client.server";
 
 /**
@@ -72,8 +73,8 @@ export async function action({ request }: Route.ActionArgs) {
     type: "signup", // Specify that this is for signup verification
     email: validData.email,
     options: {
-      // Set the redirect URL for the verification link
-      emailRedirectTo: `${process.env.SITE_URL}/auth/verify`,
+      // Must match `route("/auth/confirm", ...)` — there is no `/auth/verify` route.
+      emailRedirectTo: `${getPublicOrigin(request)}/auth/confirm`,
     },
   });
 
